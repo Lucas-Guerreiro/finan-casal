@@ -204,7 +204,7 @@ export default function App() {
   const [filtroAno, setFiltroAno] = useState(new Date().getFullYear());
   const [orcEdit, setOrcEdit] = useState({});
   const [search, setSearch] = useState("");
-  const [gastosStatusFilter, setGastosStatusFilter] = useState("todos");
+  const [gastosStatusFilter, setGastosStatusFilter] = useState({ previsto:true, efetivado:true, consolidado:true });
   const [novaCategoria, setNovaCategoria] = useState("");
   const hoje = new Date().toISOString().slice(0,10);
 
@@ -437,9 +437,9 @@ export default function App() {
   const gastosMes   = filterByMonth(data.gastos || []);
   const entradasFiltradas = applySearch(entradasMes);
   const gastosFiltrados   = applySearch(gastosMes.filter(g => {
-    if (gastosStatusFilter === "efetivados") return !!g.efetivado;
-    if (gastosStatusFilter === "naoEfetivados") return !g.efetivado;
-    return true;
+    if (g.previsto && !g.efetivado) return gastosStatusFilter.previsto;
+    if (g.previsto && g.efetivado) return gastosStatusFilter.efetivado;
+    return gastosStatusFilter.consolidado;
   }));
 
   const efetivadas  = entradasMes.filter(e=>!e.previsto||e.efetivado);
@@ -932,18 +932,27 @@ export default function App() {
             </Card>
             <div style={{ display:"grid", gap:10, marginBottom:10 }}>
               <SearchBar value={search} onChange={setSearch} />
-              <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", justifyContent:"space-between" }}>
-                <div style={{ fontSize:12, color:CLR.neutral.muted }}>
-                  {mesLabel} — {gastosFiltrados.length} gasto(s) — Efetivado: <span style={{ color:CLR.gasto.text, fontWeight:600 }}>{fmt(totalGastos)}</span>
-                  {previstosG>0&&<> — Previsto: <span style={{ color:CLR.prevista.text, fontWeight:600 }}>{fmt(previstosG)}</span></>}
+              <div style={{ display:"grid", gap:8 }}>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", justifyContent:"space-between" }}>
+                  <div style={{ fontSize:12, color:CLR.neutral.muted }}>
+                    {mesLabel} — {gastosFiltrados.length} gasto(s) — Efetivado: <span style={{ color:CLR.gasto.text, fontWeight:600 }}>{fmt(totalGastos)}</span>
+                    {previstosG>0&&<> — Previsto: <span style={{ color:CLR.prevista.text, fontWeight:600 }}>{fmt(previstosG)}</span></>}
+                  </div>
                 </div>
-                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <span style={{ fontSize:11, color:CLR.neutral.muted, textTransform:"uppercase", letterSpacing:0.5 }}>Status</span>
-                  <select value={gastosStatusFilter} onChange={e=>setGastosStatusFilter(e.target.value)} style={{ ...baseInput, width:"auto", minWidth:180, padding:"6px 10px", fontSize:12 }}>
-                    <option value="todos">Todos os gastos</option>
-                    <option value="efetivados">Somente efetivados</option>
-                    <option value="naoEfetivados">Somente não efetivados</option>
-                  </select>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:12, alignItems:"center" }}>
+                  <span style={{ fontSize:11, color:CLR.neutral.muted, textTransform:"uppercase", letterSpacing:0.5 }}>Filtrar</span>
+                  <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:CLR.neutral.label }}>
+                    <input type="checkbox" checked={gastosStatusFilter.previsto} onChange={e=>setGastosStatusFilter(s=>({...s, previsto:e.target.checked}))} />
+                    Previsto não efetivado
+                  </label>
+                  <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:CLR.neutral.label }}>
+                    <input type="checkbox" checked={gastosStatusFilter.efetivado} onChange={e=>setGastosStatusFilter(s=>({...s, efetivado:e.target.checked}))} />
+                    Efetivado
+                  </label>
+                  <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:CLR.neutral.label }}>
+                    <input type="checkbox" checked={gastosStatusFilter.consolidado} onChange={e=>setGastosStatusFilter(s=>({...s, consolidado:e.target.checked}))} />
+                    Consolidado direto
+                  </label>
                 </div>
               </div>
             </div>
