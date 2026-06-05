@@ -166,7 +166,19 @@ function gerarParcelas(form, previsto) {
   return Array.from({ length:total }, (_,i) => {
     const d = new Date(ano, mes-1+i, dia);
     const dataStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-    return { id:grupoId+i, grupoId:total>1?grupoId:undefined, descricao:form.descricao, valor:parseFloat(form.valor), categoria:form.categoria, responsavel:form.responsavel, data:dataStr, parcela:i+1, totalParcelas:total, previsto:previsto||false, efetivado:false };
+    return {
+      id: grupoId + i,
+      ...(total > 1 ? { grupoId } : {}),
+      descricao: form.descricao,
+      valor: parseFloat(form.valor),
+      categoria: form.categoria,
+      responsavel: form.responsavel,
+      data: dataStr,
+      parcela: i + 1,
+      totalParcelas: total,
+      previsto: previsto || false,
+      efetivado: false,
+    };
   });
 }
 
@@ -192,6 +204,7 @@ export default function App() {
   const [filtroAno, setFiltroAno] = useState(new Date().getFullYear());
   const [orcEdit, setOrcEdit] = useState({});
   const [search, setSearch] = useState("");
+  const [gastosStatusFilter, setGastosStatusFilter] = useState("todos");
   const [novaCategoria, setNovaCategoria] = useState("");
   const hoje = new Date().toISOString().slice(0,10);
 
@@ -291,17 +304,28 @@ export default function App() {
     return () => unsubFirestore();
   }, [user, isModeOnline, authLoading]);
 
+  function sanitizeFirestoreData(data) {
+    return JSON.parse(
+      JSON.stringify(data, (key, value) => {
+        if (typeof value === "number") return Number.isNaN(value) ? null : value;
+        return value;
+      })
+    );
+  }
+
   // Função para salvar dados
   async function saveData(nd) {
     setSaving(true);
     if (isModeOnline && db && user) {
       // Salva no Firebase Firestore
       try {
-        await setDoc(doc(db, "financas", FIRESTORE_CASAL_ID), nd);
+        const sanitized = sanitizeFirestoreData(nd);
+        await setDoc(doc(db, "financas", FIRESTORE_CASAL_ID), sanitized);
         showToast("✓ Sincronizado online!");
       } catch (e) {
         console.error("Erro ao salvar no Firestore:", e);
-        showToast("Erro ao sincronizar online.");
+        console.error("Dados enviados ao Firestore:", sanitizeFirestoreData(nd));
+        showToast("Erro ao sincronizar online: " + (e?.message || "verifique o console"));
       }
     } else {
       // Salva no LocalStorage
@@ -412,7 +436,11 @@ export default function App() {
   const entradasMes = filterByMonth(data.entradas || []);
   const gastosMes   = filterByMonth(data.gastos || []);
   const entradasFiltradas = applySearch(entradasMes);
-  const gastosFiltrados   = applySearch(gastosMes);
+  const gastosFiltrados   = applySearch(gastosMes.filter(g => {
+    if (gastosStatusFilter === "efetivados") return !!g.efetivado;
+    if (gastosStatusFilter === "naoEfetivados") return !g.efetivado;
+    return true;
+  }));
 
   const efetivadas  = entradasMes.filter(e=>!e.previsto||e.efetivado);
   const efetivadosG = gastosMes.filter(g=>!g.previsto||g.efetivado);
@@ -512,7 +540,7 @@ export default function App() {
           else if(tipo==="gasto"){
             const tot=parseInt(cols[isParcelas])||1,gId=tot>1?Date.now()+li*1000:undefined;
             const[ano,mes,dia]=dataNorm.split("-").map(Number);
-            for(let p=0;p<tot;p++){const d=new Date(ano,mes-1+p,dia);const dp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;gastos.push({id:Date.now()+li*1000+p,grupoId:gId,descricao:desc,valor,data:dp,categoria:cols[isCat]||"Outros",responsavel:cols[isResp]||"Casal",parcela:p+1,totalParcelas:tot,previsto:false,efetivado:false});}
+            for(let p=0;p<tot;p++){const d=new Date(ano,mes-1+p,dia);const dp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;gastos.push({id:Date.now()+li*1000+p, ...(gId ? { grupoId: gId } : {}), descricao:desc,valor,data:dp,categoria:cols[isCat]||"Outros",responsavel:cols[isResp]||"Casal",parcela:p+1,totalParcelas:tot,previsto:false,efetivado:false});}
           } else erros++;
         });
         setBackupPreview({raw:{entradas,gastos,orcamentos:data.orcamentos||{},categoriasExtras:data.categoriasExtras||[]},entradas:entradas.length,gastos:gastos.length,tipo:"csv",erros,merge:false});
@@ -902,10 +930,22 @@ export default function App() {
                 </div>
               </div>
             </Card>
-            <SearchBar value={search} onChange={setSearch} />
-            <div style={{ fontSize:12, color:CLR.neutral.muted, marginBottom:10 }}>
-              {mesLabel} — {gastosFiltrados.length} gasto(s) — Efetivado: <span style={{ color:CLR.gasto.text, fontWeight:600 }}>{fmt(totalGastos)}</span>
-              {previstosG>0&&<> — Previsto: <span style={{ color:CLR.prevista.text, fontWeight:600 }}>{fmt(previstosG)}</span></>}
+            <div style={{ display:"grid", gap:10, marginBottom:10 }}>
+              <SearchBar value={search} onChange={setSearch} />
+              <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", justifyContent:"space-between" }}>
+                <div style={{ fontSize:12, color:CLR.neutral.muted }}>
+                  {mesLabel} — {gastosFiltrados.length} gasto(s) — Efetivado: <span style={{ color:CLR.gasto.text, fontWeight:600 }}>{fmt(totalGastos)}</span>
+                  {previstosG>0&&<> — Previsto: <span style={{ color:CLR.prevista.text, fontWeight:600 }}>{fmt(previstosG)}</span></>}
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:11, color:CLR.neutral.muted, textTransform:"uppercase", letterSpacing:0.5 }}>Status</span>
+                  <select value={gastosStatusFilter} onChange={e=>setGastosStatusFilter(e.target.value)} style={{ ...baseInput, width:"auto", minWidth:180, padding:"6px 10px", fontSize:12 }}>
+                    <option value="todos">Todos os gastos</option>
+                    <option value="efetivados">Somente efetivados</option>
+                    <option value="naoEfetivados">Somente não efetivados</option>
+                  </select>
+                </div>
+              </div>
             </div>
             {gastosFiltrados.length===0&&<div style={{ fontSize:13, color:CLR.neutral.muted, textAlign:"center", padding:"2rem 0" }}>Nenhum gasto encontrado.</div>}
             {gastosFiltrados.map(g=><ItemRow key={g.id} item={g} tipo="gasto" onEdit={openEdit} onDelete={askDelete} onEfetivar={efetivar} />)}
