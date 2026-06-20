@@ -202,6 +202,17 @@ export default function App() {
   const [toast, setToast] = useState("");
   const [filtroMes, setFiltroMes] = useState(new Date().getMonth());
   const [filtroAno, setFiltroAno] = useState(new Date().getFullYear());
+  const [tipoFiltro, setTipoFiltro] = useState("mensal");
+  const [filtroDataInicio, setFiltroDataInicio] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  });
+  const [filtroDataFim, setFiltroDataFim] = useState(() => {
+    const d = new Date();
+    const ultimoDia = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(ultimoDia).padStart(2, "0")}`;
+  });
+  const [verPendenciasAnteriores, setVerPendenciasAnteriores] = useState(false);
   const [orcEdit, setOrcEdit] = useState({});
   const [search, setSearch] = useState("");
   const [gastosStatusFilter, setGastosStatusFilter] = useState({ previsto:true, efetivado:true, consolidado:true });
@@ -430,11 +441,21 @@ export default function App() {
     updateData({ ...data, categoriasExtras:(data.categoriasExtras||[]).filter(c=>c!==nome) });
   }
 
-  const filterByMonth = arr => arr.filter(e=>{ const d=new Date(e.data+"T00:00:00"); return d.getMonth()===filtroMes && d.getFullYear()===filtroAno; });
+  const filterTransactions = arr => {
+    if (!arr) return [];
+    if (tipoFiltro === "mensal") {
+      return arr.filter(e => {
+        const d = new Date(e.data + "T00:00:00");
+        return d.getMonth() === filtroMes && d.getFullYear() === filtroAno;
+      });
+    } else {
+      return arr.filter(e => e.data >= filtroDataInicio && e.data <= filtroDataFim);
+    }
+  };
   const applySearch = arr => search.trim() ? arr.filter(i=>[i.descricao,i.categoria||"",i.quem||"",i.responsavel||""].some(f=>f.toLowerCase().includes(search.toLowerCase()))) : arr;
 
-  const entradasMes = filterByMonth(data.entradas || []);
-  const gastosMes   = filterByMonth(data.gastos || []);
+  const entradasMes = filterTransactions(data.entradas || []);
+  const gastosMes   = filterTransactions(data.gastos || []);
   const entradasFiltradas = applySearch(entradasMes);
   const gastosFiltrados   = applySearch(gastosMes.filter(g => {
     if (g.previsto && !g.efetivado) return gastosStatusFilter.previsto;
@@ -458,7 +479,24 @@ export default function App() {
     Lene:  efetivadosG.filter(g=>g.responsavel==="Lene").reduce((s,g)=>s+Number(g.valor),0),
   };
   const gastosPorCategoria = categorias.reduce((acc,cat)=>{ acc[cat]=efetivadosG.filter(g=>g.categoria===cat).reduce((s,g)=>s+Number(g.valor),0); return acc; },{});
-  const mesLabel = `${MESES[filtroMes]}/${filtroAno}`;
+
+  const limiteDataInicio = tipoFiltro === "mensal"
+    ? `${filtroAno}-${String(filtroMes + 1).padStart(2, "0")}-01`
+    : filtroDataInicio;
+
+  const gastosPendentesAnteriores = (data.gastos || []).filter(g => g.previsto && !g.efetivado && g.data < limiteDataInicio);
+  const totalPendentesAnteriores = gastosPendentesAnteriores.reduce((s, g) => s + Number(g.valor), 0);
+
+  const mesLabel = tipoFiltro === "mensal" 
+    ? `${MESES[filtroMes]}/${filtroAno}`
+    : (() => {
+        const formatarData = (dStr) => {
+          if (!dStr) return "";
+          const [a, m, d] = dStr.split("-");
+          return `${d}/${m}/${a.slice(-2)}`;
+        };
+        return `${formatarData(filtroDataInicio)} a ${formatarData(filtroDataFim)}`;
+      })();
 
   function addGasto(previsto) {
     if (!formGasto.descricao||!formGasto.valor) return;
@@ -778,15 +816,30 @@ export default function App() {
           </div>
         </div>
         
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
           {saving && <span style={{ fontSize:11, color:CLR.neutral.muted }}>💾 Salvando...</span>}
-          <div style={{ display:"flex", gap:4 }}>
-            <select value={filtroMes} onChange={e=>setFiltroMes(Number(e.target.value))} style={{ ...baseInput, width:"auto", padding:"6px 10px", fontSize:12 }}>
-              {MESES.map((m,i)=><option key={i} value={i}>{m}</option>)}
+          <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+            <select value={tipoFiltro} onChange={e=>setTipoFiltro(e.target.value)} style={{ ...baseInput, width:"auto", padding:"6px 10px", fontSize:12 }}>
+              <option value="mensal">Mensal</option>
+              <option value="periodo">Período</option>
             </select>
-            <select value={filtroAno} onChange={e=>setFiltroAno(Number(e.target.value))} style={{ ...baseInput, width:"auto", padding:"6px 10px", fontSize:12 }}>
-              {[2024,2025,2026,2027].map(a=><option key={a} value={a}>{a}</option>)}
-            </select>
+            
+            {tipoFiltro === "mensal" ? (
+              <div style={{ display:"flex", gap:4 }}>
+                <select value={filtroMes} onChange={e=>setFiltroMes(Number(e.target.value))} style={{ ...baseInput, width:"auto", padding:"6px 10px", fontSize:12 }}>
+                  {MESES.map((m,i)=><option key={i} value={i}>{m}</option>)}
+                </select>
+                <select value={filtroAno} onChange={e=>setFiltroAno(Number(e.target.value))} style={{ ...baseInput, width:"auto", padding:"6px 10px", fontSize:12 }}>
+                  {[2024,2025,2026,2027].map(a=><option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+            ) : (
+              <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                <input type="date" value={filtroDataInicio} onChange={e=>setFiltroDataInicio(e.target.value)} style={{ ...baseInput, width:"auto", padding:"5px 8px", fontSize:12 }} />
+                <span style={{ fontSize:11, color:CLR.neutral.muted }}>até</span>
+                <input type="date" value={filtroDataFim} onChange={e=>setFiltroDataFim(e.target.value)} style={{ ...baseInput, width:"auto", padding:"5px 8px", fontSize:12 }} />
+              </div>
+            )}
           </div>
           
           {/* Botão de Logout */}
@@ -806,6 +859,70 @@ export default function App() {
       </div>
 
       <div style={{ padding:"1.25rem" }}>
+
+        {/* Alerta de Despesas Pendentes de Meses Anteriores */}
+        {gastosPendentesAnteriores.length > 0 && (
+          <div style={{
+            background: "#2a1e12",
+            border: "1px solid #7c4a15",
+            borderRadius: 12,
+            padding: "12px 16px",
+            marginBottom: 16,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 18 }}>⚠️</span>
+              <div style={{ fontSize: 13, color: "#ffb055", fontWeight: 500 }}>
+                Atenção: Você tem <strong>{gastosPendentesAnteriores.length} despesa(s) prevista(s) pendente(s)</strong> de meses passados (Total: <strong>{fmt(totalPendentesAnteriores)}</strong>)
+              </div>
+            </div>
+            <button
+              onClick={() => setVerPendenciasAnteriores(true)}
+              style={{ ...baseBtn, background: "#5c330a", color: "#ffaa44", border: "1px solid #7c4a15", padding: "6px 12px", fontSize: 12, fontWeight: 600 }}
+            >
+              🔍 Resolver Pendências
+            </button>
+          </div>
+        )}
+
+        {/* Modal para Visualizar e Resolver Pendências Anteriores */}
+        {verPendenciasAnteriores && (
+          <Modal 
+            title="⚠️ Despesas Pendentes de Meses Anteriores" 
+            accent="prevista" 
+            onClose={() => setVerPendenciasAnteriores(false)}
+          >
+            <div style={{ fontSize: 12, color: CLR.neutral.muted, marginBottom: 14, lineHeight: 1.4 }}>
+              As seguintes despesas foram previstas para datas anteriores ao período atual, mas ainda não foram efetivadas. Resolva-as abaixo:
+            </div>
+            <div style={{ maxHeight: "45vh", overflowY: "auto", display: "grid", gap: 4, paddingRight: 4 }}>
+              {gastosPendentesAnteriores.map(g => (
+                <ItemRow 
+                  key={g.id} 
+                  item={g} 
+                  tipo="gasto" 
+                  onEdit={(tipo, item) => {
+                    setVerPendenciasAnteriores(false); // Fecha este modal para abrir o de edição
+                    openEdit(tipo, item);
+                  }} 
+                  onDelete={askDelete} 
+                  onEfetivar={efetivar} 
+                />
+              ))}
+            </div>
+            <button 
+              onClick={() => setVerPendenciasAnteriores(false)} 
+              style={{ ...baseBtn, background: CLR.neutral.card, color: "#e2e8f0", border: `1px solid ${CLR.neutral.border}`, width: "100%", marginTop: 14 }}
+            >
+              Fechar
+            </button>
+          </Modal>
+        )}
 
         {/* DASHBOARD */}
         {tab==="dashboard" && (
