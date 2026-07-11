@@ -265,9 +265,19 @@ export default function App() {
       // Sem Firebase configurado, carrega imediatamente em modo local
       setUser(null);
       setIsModeOnline(false);
-      setAuthLoading(false);
     }
   }, []);
+
+  // Controle de acesso à aba Extrato (permitida apenas para o Lucas)
+  useEffect(() => {
+    const isLucas = user && (
+      (user.email && user.email.toLowerCase().includes("lucas")) ||
+      (user.uid === "visitante_local" && (formGasto.responsavel === "Lucas" || authForm.quem === "Lucas"))
+    );
+    if (tab === "extrato" && !isLucas) {
+      setTab("dashboard");
+    }
+  }, [tab, user, formGasto.responsavel, authForm.quem]);
 
   // Monitora e carrega os dados financeiros (Firestore em Tempo Real ou LocalStorage)
   useEffect(() => {
@@ -616,11 +626,16 @@ export default function App() {
     updateData(novoData); setBackupPreview(null); setConfirmRestore(false); showToast("✓ Dados importados!");
   }
 
+  const isUsuarioLucas = user && (
+    (user.email && user.email.toLowerCase().includes("lucas")) ||
+    (user.uid === "visitante_local" && (formGasto.responsavel === "Lucas" || authForm.quem === "Lucas"))
+  );
+
   const tabs = [
     { key:"dashboard", label:"Painel",    icon:"📊" },
     { key:"entradas",  label:"Entradas",  icon:"📈" },
     { key:"gastos",    label:"Gastos",    icon:"📉" },
-    { key:"extrato",   label:"Extrato",   icon:"📄" },
+    ...(isUsuarioLucas ? [{ key:"extrato", label:"Extrato", icon:"📄" }] : []),
     { key:"orcamento", label:"Orçamento", icon:"🎯" },
     { key:"historico", label:"Histórico", icon:"🗂️" },
     { key:"backup",    label:"Backup",    icon:"💾" },
