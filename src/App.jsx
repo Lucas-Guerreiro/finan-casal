@@ -123,44 +123,97 @@ function StatusBadge({ previsto, efetivado }) {
   return <Badge color="#d4c22a">⏳ Previsto</Badge>;
 }
 function ItemRow({ item, tipo, onEdit, onDelete, onEfetivar }) {
+  const [expandido, setExpandido] = useState(false);
   const isParcela = item.totalParcelas > 1;
   const isPrevisto = !!item.previsto;
   const isEfetivado = !!item.efetivado;
   const c = tipo==="entrada"
     ? (isPrevisto && !isEfetivado ? CLR.prevista : CLR.entrada)
     : (isPrevisto && !isEfetivado ? CLR.prevista : isParcela ? CLR.parcela : CLR.gasto);
+  const temItens = tipo === "gasto" && item.itens && item.itens.length > 0;
+
   return (
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"11px 14px", background:CLR.neutral.card, border:`1px solid ${CLR.neutral.border}`, borderLeft:`3px solid ${c.text}`, borderRadius:10, marginBottom:8, opacity:isPrevisto&&!isEfetivado?0.85:1 }}>
-      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-        <div style={{ width:34, height:34, borderRadius:"50%", background:c.bg, border:`1px solid ${c.border}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>
-          {tipo==="entrada" ? (isPrevisto&&!isEfetivado?"🔮":"↑") : (isPrevisto&&!isEfetivado?"🔮":isParcela?"💳":"↓")}
+    <div style={{ display:"flex", flexDirection:"column", marginBottom: 8 }}>
+      <div 
+        onClick={() => temItens && setExpandido(!expandido)}
+        style={{ 
+          display:"flex", 
+          justifyContent:"space-between", 
+          alignItems:"center", 
+          padding:"11px 14px", 
+          background:CLR.neutral.card, 
+          border:`1px solid ${CLR.neutral.border}`, 
+          borderLeft:`3px solid ${c.text}`, 
+          borderRadius: temItens && expandido ? "10px 10px 0 0" : 10,
+          opacity:isPrevisto&&!isEfetivado?0.85:1,
+          cursor: temItens ? "pointer" : "default",
+          transition: "border-radius 0.2s"
+        }}
+      >
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ width:34, height:34, borderRadius:"50%", background:c.bg, border:`1px solid ${c.border}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>
+            {tipo==="entrada" ? (isPrevisto&&!isEfetivado?"🔮":"↑") : (isPrevisto&&!isEfetivado?"🔮":isParcela?"💳":"↓")}
+          </div>
+          <div>
+            <div style={{ fontSize:14, fontWeight:500, color:"#e2e8f0", display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+              {item.descricao}
+              {isParcela && <span style={{ fontSize:11, background:CLR.parcela.bg, color:CLR.parcela.text, border:`1px solid ${CLR.parcela.border}`, borderRadius:99, padding:"1px 7px" }}>{item.parcela}/{item.totalParcelas}</span>}
+              <StatusBadge previsto={isPrevisto} efetivado={isEfetivado} />
+              {temItens && (
+                <span style={{ 
+                  fontSize: 10, 
+                  background: CLR.neutral.bg, 
+                  color: CLR.neutral.label, 
+                  border: `1px solid ${CLR.neutral.border}`, 
+                  borderRadius: 99, 
+                  padding: "1px 6px", 
+                  display: "inline-flex", 
+                  alignItems: "center", 
+                  gap: 3 
+                }}>
+                  📋 {item.itens.length} {item.itens.length === 1 ? "item" : "itens"} {expandido ? "▲" : "▼"}
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize:11, color:CLR.neutral.muted, marginTop:2, display:"flex", gap:6, flexWrap:"wrap" }}>
+              {tipo==="entrada"
+                ? <><Badge color={c.text}>{item.quem}</Badge><span>{item.data}</span></>
+                : <><Badge color={c.text}>{item.categoria}</Badge><Badge color={CLR.neutral.label}>{item.responsavel}</Badge><span>{item.data}</span></>}
+            </div>
+          </div>
         </div>
-        <div>
-          <div style={{ fontSize:14, fontWeight:500, color:"#e2e8f0", display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-            {item.descricao}
-            {isParcela && <span style={{ fontSize:11, background:CLR.parcela.bg, color:CLR.parcela.text, border:`1px solid ${CLR.parcela.border}`, borderRadius:99, padding:"1px 7px" }}>{item.parcela}/{item.totalParcelas}</span>}
-            <StatusBadge previsto={isPrevisto} efetivado={isEfetivado} />
-          </div>
-          <div style={{ fontSize:11, color:CLR.neutral.muted, marginTop:2, display:"flex", gap:6, flexWrap:"wrap" }}>
-            {tipo==="entrada"
-              ? <><Badge color={c.text}>{item.quem}</Badge><span>{item.data}</span></>
-              : <><Badge color={c.text}>{item.categoria}</Badge><Badge color={CLR.neutral.label}>{item.responsavel}</Badge><span>{item.data}</span></>}
-          </div>
+        <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap", justifyContent:"flex-end" }} onClick={e => e.stopPropagation()}>
+          <span style={{ fontWeight:700, fontSize:15, color:c.text }}>{fmt(item.valor)}</span>
+          {isPrevisto && !isEfetivado && (
+            <button onClick={()=>onEfetivar(tipo,item.id)} style={{ ...baseBtn, background:"#0d3d2e", color:"#2ecc8f", border:"1px solid #1a6647", padding:"5px 9px", fontSize:12 }}>✓ Efetivar</button>
+          )}
+          <button onClick={()=>onEdit(tipo,item)} style={{ ...baseBtn, background:CLR.neutral.bg, color:CLR.neutral.label, border:`1px solid ${CLR.neutral.border}`, padding:"5px 9px" }}>✏️</button>
+          <button onClick={()=>onDelete(tipo,item.id,item.grupoId)} style={{ ...baseBtn, background:CLR.gasto.bg, color:CLR.gasto.text, border:`1px solid ${CLR.gasto.border}`, padding:"5px 9px" }}>🗑</button>
         </div>
       </div>
-      <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap", justifyContent:"flex-end" }}>
-        <span style={{ fontWeight:700, fontSize:15, color:c.text }}>{fmt(item.valor)}</span>
-        {isPrevisto && !isEfetivado && (
-          <button onClick={()=>onEfetivar(tipo,item.id)} style={{ ...baseBtn, background:"#0d3d2e", color:"#2ecc8f", border:"1px solid #1a6647", padding:"5px 9px", fontSize:12 }}>✓ Efetivar</button>
-        )}
-        <button onClick={()=>onEdit(tipo,item)} style={{ ...baseBtn, background:CLR.neutral.bg, color:CLR.neutral.label, border:`1px solid ${CLR.neutral.border}`, padding:"5px 9px" }}>✏️</button>
-        <button onClick={()=>onDelete(tipo,item.id,item.grupoId)} style={{ ...baseBtn, background:CLR.gasto.bg, color:CLR.gasto.text, border:`1px solid ${CLR.gasto.border}`, padding:"5px 9px" }}>🗑</button>
-      </div>
+      {temItens && expandido && (
+        <div style={{
+          background: "#1c1c2b",
+          border: `1px solid ${CLR.neutral.border}`,
+          borderTop: "none",
+          borderRadius: "0 0 10px 10px",
+          padding: "10px 14px 10px 48px",
+          display: "grid",
+          gap: 6
+        }}>
+          {item.itens.map((it, idx) => (
+            <div key={idx} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", fontSize:12, color:CLR.neutral.label }}>
+              <span>▪ {it.descricao}</span>
+              <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{fmt(it.valor)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function gerarParcelas(form, previsto) {
+function gerarParcelas(form, previsto, itens) {
   const total = parseInt(form.totalParcelas)||1;
   const grupoId = Date.now();
   const [ano,mes,dia] = form.data.split("-").map(Number);
@@ -179,6 +232,7 @@ function gerarParcelas(form, previsto) {
       totalParcelas: total,
       previsto: previsto || false,
       efetivado: false,
+      ...(itens && itens.length > 0 ? { itens } : {}),
     };
   });
 }
@@ -237,6 +291,14 @@ export default function App() {
   const [backupPreview, setBackupPreview] = useState(null);
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+
+  // Estados para detalhamento de sub-itens em gastos
+  const [detalharItensForm, setDetalharItensForm] = useState(false);
+  const [itensGastoForm, setItensGastoForm] = useState([]);
+  const [novoItemDesc, setNovoItemDesc] = useState("");
+  const [novoItemValor, setNovoItemValor] = useState("");
+  const [editNovoItemDesc, setEditNovoItemDesc] = useState("");
+  const [editNovoItemValor, setEditNovoItemValor] = useState("");
 
   // Monitora o estado de Autenticação se o Firebase estiver configurado
   useEffect(() => {
@@ -511,9 +573,14 @@ export default function App() {
 
   function addGasto(previsto) {
     if (!formGasto.descricao||!formGasto.valor) return;
-    const parcelas = gerarParcelas(formGasto, previsto);
+    const subItens = detalharItensForm ? itensGastoForm : [];
+    const parcelas = gerarParcelas(formGasto, previsto, subItens);
     updateData({ ...data, gastos:[...parcelas,...(data.gastos||[])] });
     setFormGasto({ ...formGasto, descricao:"", valor:"", totalParcelas:"1" });
+    setDetalharItensForm(false);
+    setItensGastoForm([]);
+    setNovoItemDesc("");
+    setNovoItemValor("");
   }
   function addEntrada(previsto) {
     if (!formEntrada.descricao||!formEntrada.valor) return;
@@ -785,14 +852,100 @@ export default function App() {
           <div style={{ display:"grid", gap:10 }}>
             <InputField label="Descrição" value={editForm.descricao} onChange={e=>setEditForm({...editForm,descricao:e.target.value})} />
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-              <InputField label="Valor (R$)" type="number" value={editForm.valor} onChange={e=>setEditForm({...editForm,valor:e.target.value})} />
+              <InputField label="Valor (R$)" type="number" value={editForm.valor} onChange={e=>setEditForm({...editForm,valor:e.target.value})} disabled={editForm.itens && editForm.itens.length > 0} />
               <InputField label="Data" type="date" value={editForm.data} onChange={e=>setEditForm({...editForm,data:e.target.value})} />
             </div>
             {editItem.tipo==="entrada"
               ? <SelectField label="Quem recebeu" value={editForm.quem} onChange={e=>setEditForm({...editForm,quem:e.target.value})}><option>Lucas</option><option>Lene</option></SelectField>
               : <>
-                  <SelectField label="Categoria" value={editForm.categoria} onChange={e=>setEditForm({...editForm,categoria:e.target.value})}>{categorias.map(c=><option key={c}>{c}</option>)}</SelectField>
-                  <SelectField label="Responsável" value={editForm.responsavel} onChange={e=>setEditForm({...editForm,responsavel:e.target.value})}>{RESPONSAVEIS.map(r=><option key={r}>{r}</option>)}</SelectField>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                    <SelectField label="Categoria" value={editForm.categoria} onChange={e=>setEditForm({...editForm,categoria:e.target.value})}>{categorias.map(c=><option key={c}>{c}</option>)}</SelectField>
+                    <SelectField label="Responsável" value={editForm.responsavel} onChange={e=>setEditForm({...editForm,responsavel:e.target.value})}>{RESPONSAVEIS.map(r=><option key={r}>{r}</option>)}</SelectField>
+                  </div>
+                  
+                  {/* Detalhamento de sub-itens dentro do modal de edição */}
+                  <div style={{ 
+                    background: "#1c1c2b", 
+                    border: `1px solid ${CLR.neutral.border}`, 
+                    borderRadius: 10, 
+                    padding: 12, 
+                    display: "grid", 
+                    gap: 10,
+                    marginTop: 4
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: CLR.parcela.text, display: "flex", justifyContent: "space-between" }}>
+                      <span>📋 Itens Detalhados</span>
+                      <span>Total: {fmt((editForm.itens || []).reduce((s,i)=>s+Number(i.valor),0))}</span>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 90px auto", gap: 6, alignItems: "end" }}>
+                      <InputField 
+                        label="Nome do Item" 
+                        placeholder="Ex: Prato, Cortina..." 
+                        value={editNovoItemDesc} 
+                        onChange={e=>setEditNovoItemDesc(e.target.value)} 
+                      />
+                      <InputField 
+                        label="Valor (R$)" 
+                        type="number" 
+                        placeholder="0,00" 
+                        value={editNovoItemValor} 
+                        onChange={e=>setEditNovoItemValor(e.target.value)} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          if (!editNovoItemDesc || !editNovoItemValor) return;
+                          const novoItem = {
+                            id: Date.now(),
+                            descricao: editNovoItemDesc,
+                            valor: parseFloat(editNovoItemValor)
+                          };
+                          const itensAtuais = editForm.itens || [];
+                          const novaLista = [...itensAtuais, novoItem];
+                          const total = novaLista.reduce((s,i) => s + i.valor, 0);
+                          setEditForm({
+                            ...editForm,
+                            itens: novaLista,
+                            valor: total.toString()
+                          });
+                          setEditNovoItemDesc("");
+                          setEditNovoItemValor("");
+                        }}
+                        style={{ ...baseBtn, background: CLR.entrada.bg, color: CLR.entrada.text, border: `1px solid ${CLR.entrada.border}`, height: 35, display: "flex", alignItems: "center", justifyContent: "center" }}
+                      >
+                        ➕
+                      </button>
+                    </div>
+
+                    {(editForm.itens || []).length > 0 && (
+                      <div style={{ display: "grid", gap: 4, marginTop: 4 }}>
+                        {editForm.itens.map((it) => (
+                          <div key={it.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: CLR.neutral.card, border: `1px solid ${CLR.neutral.border}`, borderRadius: 6, padding: "6px 10px", fontSize: 12 }}>
+                            <span style={{ color: "#e2e8f0" }}>• {it.descricao}</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontWeight: 600, color: CLR.entrada.text }}>{fmt(it.valor)}</span>
+                              <button 
+                                type="button" 
+                                onClick={() => {
+                                  const novaLista = editForm.itens.filter(i => i.id !== it.id);
+                                  const total = novaLista.reduce((s,i) => s + i.valor, 0);
+                                  setEditForm({
+                                    ...editForm,
+                                    itens: novaLista,
+                                    valor: total.toString()
+                                  });
+                                }} 
+                                style={{ background: "none", border: "none", color: CLR.gasto.text, cursor: "pointer", padding: "2px 4px", fontSize: 11 }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </>}
             <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:CLR.neutral.bg, borderRadius:8, border:`1px solid ${CLR.neutral.border}` }}>
               <input type="checkbox" id="editPrevisto" checked={!!editForm.previsto} onChange={e=>setEditForm({...editForm,previsto:e.target.checked,efetivado:e.target.checked?editForm.efetivado:false})} />
@@ -1053,8 +1206,115 @@ export default function App() {
               <div style={{ fontSize:14, fontWeight:600, marginBottom:14, color:CLR.gasto.text }}>📉 Adicionar gasto</div>
               <div style={{ display:"grid", gap:10 }}>
                 <InputField label="Descrição" placeholder="Ex: Fatura Cartão, Netflix..." value={formGasto.descricao} onChange={e=>setFormGasto({...formGasto,descricao:e.target.value})} />
+                
+                {/* Botão para ativar detalhamento de sub-itens */}
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: -4 }}>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      const novoEstado = !detalharItensForm;
+                      setDetalharItensForm(novoEstado);
+                      if (!novoEstado) {
+                        setItensGastoForm([]);
+                      }
+                    }} 
+                    style={{ 
+                      ...baseBtn, 
+                      background: detalharItensForm ? "rgba(224,85,85,0.1)" : "rgba(123,140,222,0.1)", 
+                      color: detalharItensForm ? CLR.gasto.text : CLR.parcela.text, 
+                      border: `1px solid ${detalharItensForm ? CLR.gasto.border : CLR.parcela.border}`, 
+                      fontSize: 11,
+                      padding: "4px 10px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4
+                    }}
+                  >
+                    {detalharItensForm ? "✕ Cancelar detalhamento" : "📋 Detalhar itens desta compra"}
+                  </button>
+                </div>
+
+                {/* Área dinâmica de detalhamento de sub-itens */}
+                {detalharItensForm && (
+                  <div style={{ 
+                    background: "#1c1c2b", 
+                    border: `1px solid ${CLR.neutral.border}`, 
+                    borderRadius: 10, 
+                    padding: 12,
+                    display: "grid",
+                    gap: 10 
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: CLR.parcela.text, display: "flex", justifyContent: "space-between" }}>
+                      <span>📋 Itens da Compra</span>
+                      <span>Total: {fmt(itensGastoForm.reduce((s,i)=>s+Number(i.valor),0))}</span>
+                    </div>
+                    
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 90px auto", gap: 6, alignItems: "end" }}>
+                      <InputField 
+                        label="Nome do Item" 
+                        placeholder="Ex: Prato, Cortina..." 
+                        value={novoItemDesc} 
+                        onChange={e=>setNovoItemDesc(e.target.value)} 
+                      />
+                      <InputField 
+                        label="Valor (R$)" 
+                        type="number" 
+                        placeholder="0,00" 
+                        value={novoItemValor} 
+                        onChange={e=>setNovoItemValor(e.target.value)} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          if (!novoItemDesc || !novoItemValor) return;
+                          const novoItem = {
+                            id: Date.now(),
+                            descricao: novoItemDesc,
+                            valor: parseFloat(novoItemValor)
+                          };
+                          const novaLista = [...itensGastoForm, novoItem];
+                          setItensGastoForm(novaLista);
+                          setNovoItemDesc("");
+                          setNovoItemValor("");
+                          // Atualiza o valor total no formGasto
+                          const total = novaLista.reduce((s,i) => s + i.valor, 0);
+                          setFormGasto(f => ({ ...f, valor: total.toString() }));
+                        }}
+                        style={{ ...baseBtn, background: CLR.entrada.bg, color: CLR.entrada.text, border: `1px solid ${CLR.entrada.border}`, height: 35, display: "flex", alignItems: "center", justifyContent: "center" }}
+                      >
+                        ➕
+                      </button>
+                    </div>
+
+                    {itensGastoForm.length > 0 && (
+                      <div style={{ display: "grid", gap: 4, marginTop: 4 }}>
+                        {itensGastoForm.map((it) => (
+                          <div key={it.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: CLR.neutral.card, border: `1px solid ${CLR.neutral.border}`, borderRadius: 6, padding: "6px 10px", fontSize: 12 }}>
+                            <span style={{ color: "#e2e8f0" }}>• {it.descricao}</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontWeight: 600, color: CLR.entrada.text }}>{fmt(it.valor)}</span>
+                              <button 
+                                type="button" 
+                                onClick={() => {
+                                  const novaLista = itensGastoForm.filter(i => i.id !== it.id);
+                                  setItensGastoForm(novaLista);
+                                  const total = novaLista.reduce((s,i) => s + i.valor, 0);
+                                  setFormGasto(f => ({ ...f, valor: total.toString() }));
+                                }} 
+                                style={{ background: "none", border: "none", color: CLR.gasto.text, cursor: "pointer", padding: "2px 4px", fontSize: 11 }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                  <InputField label="Valor por parcela (R$)" type="number" placeholder="0,00" value={formGasto.valor} onChange={e=>setFormGasto({...formGasto,valor:e.target.value})} />
+                  <InputField label="Valor por parcela (R$)" type="number" placeholder="0,00" value={formGasto.valor} onChange={e=>setFormGasto({...formGasto,valor:e.target.value})} disabled={detalharItensForm} />
                   <InputField label="Data da 1ª parcela" type="date" value={formGasto.data} onChange={e=>setFormGasto({...formGasto,data:e.target.value})} />
                 </div>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
