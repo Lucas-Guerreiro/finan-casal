@@ -7,6 +7,7 @@ import {
   onAuthStateChanged
 } from "firebase/auth";
 import { doc, setDoc, onSnapshot } from "firebase/firestore";
+import ExtratoTab from "./ExtratoTab";
 
 const STORAGE_KEY = "financas_casal_data_v4";
 const CATEGORIAS_PADRAO = ["Moradia","Alimentação","Transporte","Saúde","Educação","Lazer","Vestuário","Outros"];
@@ -509,6 +510,28 @@ export default function App() {
     updateData({ ...data, entradas:[{ ...formEntrada, id:Date.now(), valor:parseFloat(formEntrada.valor), previsto:previsto||false, efetivado:false },...(data.entradas||[])] });
     setFormEntrada({ ...formEntrada, descricao:"", valor:"" });
   }
+
+  function onImportarItens(novasTransacoes) {
+    const novasEntradas = [];
+    const novosGastos = [];
+    
+    novasTransacoes.forEach(t => {
+      if (t.tipo === "entrada") {
+        novasEntradas.push(t.dados);
+      } else {
+        novosGastos.push(t.dados);
+      }
+    });
+
+    const novoData = {
+      ...data,
+      entradas: [...novasEntradas, ...(data.entradas || [])],
+      gastos: [...novosGastos, ...(data.gastos || [])]
+    };
+
+    updateData(novoData);
+  }
+
   function efetivar(tipo, id) {
     if (tipo==="entrada") updateData({ ...data, entradas:data.entradas.map(e=>e.id===id?{...e,efetivado:true}:e) });
     else updateData({ ...data, gastos:data.gastos.map(g=>g.id===id?{...g,efetivado:true}:g) });
@@ -597,6 +620,7 @@ export default function App() {
     { key:"dashboard", label:"Painel",    icon:"📊" },
     { key:"entradas",  label:"Entradas",  icon:"📈" },
     { key:"gastos",    label:"Gastos",    icon:"📉" },
+    { key:"extrato",   label:"Extrato",   icon:"📄" },
     { key:"orcamento", label:"Orçamento", icon:"🎯" },
     { key:"historico", label:"Histórico", icon:"🗂️" },
     { key:"backup",    label:"Backup",    icon:"💾" },
@@ -1129,6 +1153,15 @@ export default function App() {
               return filtered.map(item=><ItemRow key={item.id+item.tipo} item={item} tipo={item.tipo} onEdit={openEdit} onDelete={askDelete} onEfetivar={efetivar} />);
             })()}
           </div>
+        )}
+
+        {/* EXTRATO */}
+        {tab==="extrato" && (
+          <ExtratoTab
+            categorias={categorias}
+            onImportarItens={onImportarItens}
+            showToast={showToast}
+          />
         )}
 
         {/* BACKUP */}
