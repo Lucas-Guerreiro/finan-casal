@@ -37,9 +37,9 @@ function sugerirCategoria(tipo, descricao) {
 }
 
 // ─── Extração de texto com posicionamento (Y grouping) ─────────────────────
-async function extrairLinhasPDF(file) {
+async function extrairLinhasPDF(file, password = "") {
   const buffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  const pdf = await pdfjsLib.getDocument({ data: buffer, password: password }).promise;
   const todasLinhas = [];
 
   for (let p = 1; p <= pdf.numPages; p++) {
@@ -146,6 +146,9 @@ export default function ExtratoTab({ categorias, onImportarItens, showToast }) {
   const [nomeArq, setNomeArq]     = useState("");
   const [dragOver, setDragOver]   = useState(false);
   const [expandido, setExpandido] = useState(null); // id do item com edição expandida
+  const [erroSenha, setErroSenha] = useState(false);
+  const [senhaTemp, setSenhaTemp] = useState("");
+  const [arquivoPendente, setArquivoPendente] = useState(null);
   const fileRef = useRef(null);
 
   const RESPONSAVEIS = ["Casal","Lucas","Lene"];
@@ -154,7 +157,7 @@ export default function ExtratoTab({ categorias, onImportarItens, showToast }) {
   const ignorados   = itens.filter(i => i.status === "ignorado").length;
 
   // ── Lê o PDF e popular itens ──────────────────────────────────────────────
-  async function processarPDF(file) {
+  async function processarPDF(file, password = "") {
     if (!file || !file.name.endsWith(".pdf")) {
       showToast("Selecione um arquivo .pdf de extrato bancário.");
       return;
@@ -163,17 +166,26 @@ export default function ExtratoTab({ categorias, onImportarItens, showToast }) {
     setItens([]);
     setNomeArq(file.name);
     try {
-      const linhas  = await extrairLinhasPDF(file);
+      const linhas  = await extrairLinhasPDF(file, password);
       const parsed  = parsearExtratoCasal(linhas, categorias);
       if (parsed.length === 0) {
         showToast("Nenhuma transação encontrada. Verifique se o PDF é um extrato C6Bank válido.");
       } else {
         setItens(parsed);
         showToast(`✓ ${parsed.length} transação(ões) identificada(s)!`);
+        setErroSenha(false);
+        setArquivoPendente(null);
       }
     } catch (e) {
       console.error(e);
-      showToast("Erro ao ler o PDF. Verifique se o arquivo não está protegido por senha.");
+      if (e.name === "PasswordException" || e.code === 1 || e.message?.includes("password")) {
+        setErroSenha(true);
+        setSenhaTemp("");
+        setArquivoPendente(file);
+        showToast("Este extrato PDF está protegido por senha.");
+      } else {
+        showToast("Erro ao ler o PDF. Verifique se o arquivo não está corrompido.");
+      }
     }
     setLoading(false);
   }
@@ -261,8 +273,59 @@ export default function ExtratoTab({ categorias, onImportarItens, showToast }) {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div>
+      {/* ── Prompt de Senha para PDF Protegido ── */}
+      {erroSenha && !loading && (
+        <div style={{
+          background: CLR.neutral.card,
+          border: `1px solid ${CLR.gasto.border}`,
+          borderRadius: 16,
+          padding: "2rem",
+          maxWidth: 400,
+          margin: "0 auto 20px auto",
+          boxShadow: `0 0 24px ${CLR.gasto.text}11`,
+          display: "grid",
+          gap: 14
+        }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 36, marginBottom: 8 }}>🔒</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: CLR.gasto.text, marginBottom: 4 }}>
+              Este arquivo PDF está protegido por senha
+            </div>
+            <div style={{ fontSize: 12, color: CLR.neutral.label, lineHeight: 1.4, marginBottom: 6 }}>
+              Extratos de banco costumam ser protegidos pelo CPF do titular (apenas números ou com pontos e traço). Digite a senha para abrir o arquivo:
+            </div>
+          </div>
+
+          <div>
+            <input
+              type="password"
+              placeholder="Digite a senha do PDF"
+              value={senhaTemp}
+              onChange={e => setSenhaTemp(e.target.value)}
+              style={baseInput}
+              onKeyDown={e => e.key === "Enter" && processarPDF(arquivoPendente, senhaTemp)}
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => { setErroSenha(false); setArquivoPendente(null); }}
+              style={{ ...baseBtn, flex: 1, background: CLR.neutral.bg, color: "#e2e8f0", border: `1px solid ${CLR.neutral.border}` }}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => processarPDF(arquivoPendente, senhaTemp)}
+              style={{ ...baseBtn, flex: 1, background: CLR.gasto.bg, color: CLR.gasto.text, border: `1px solid ${CLR.gasto.border}`, fontWeight: 700 }}
+            >
+              Desbloquear
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Área de upload ── */}
-      {itens.length === 0 && !loading && (
+      {itens.length === 0 && !erroSenha && !loading && (
         <div
           onDragOver={e => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
