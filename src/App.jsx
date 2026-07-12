@@ -300,6 +300,10 @@ export default function App() {
   const [editNovoItemDesc, setEditNovoItemDesc] = useState("");
   const [editNovoItemValor, setEditNovoItemValor] = useState("");
 
+  // Estados para pagamento parcial (efetivação) de contas
+  const [efetivandoItem, setEfetivandoItem] = useState(null);
+  const [valorPagoForm, setValorPagoForm] = useState("");
+
   // Monitora o estado de Autenticação se o Firebase estiver configurado
   useEffect(() => {
     if (isConfigured && auth) {
@@ -609,10 +613,75 @@ export default function App() {
     updateData(novoData);
   }
 
-  function efetivar(tipo, id) {
-    if (tipo==="entrada") updateData({ ...data, entradas:data.entradas.map(e=>e.id===id?{...e,efetivado:true}:e) });
-    else updateData({ ...data, gastos:data.gastos.map(g=>g.id===id?{...g,efetivado:true}:g) });
+  function efetivar(tipo, item) {
+    setEfetivandoItem({ tipo, item });
+    setValorPagoForm(item.valor.toString());
   }
+
+  function confirmarEfetivacao() {
+    if (!efetivandoItem) return;
+    const { tipo, item } = efetivandoItem;
+    const valorPago = parseFloat(valorPagoForm);
+
+    if (isNaN(valorPago) || valorPago <= 0) {
+      showToast("Digite um valor válido maior que zero.");
+      return;
+    }
+
+    if (valorPago > item.valor) {
+      showToast(`O valor pago não pode ser maior que o total (R$ ${item.valor.toFixed(2)}).`);
+      return;
+    }
+
+    if (valorPago === item.valor) {
+      if (tipo === "entrada") {
+        updateData({ ...data, entradas: data.entradas.map(e => e.id === item.id ? { ...e, efetivado: true } : e) });
+      } else {
+        updateData({ ...data, gastos: data.gastos.map(g => g.id === item.id ? { ...g, efetivado: true } : g) });
+      }
+      showToast("✓ Efetivado com sucesso!");
+    } else {
+      const nomeParcial = `${item.descricao} (Parcial)`;
+      if (tipo === "entrada") {
+        const itemRecebido = {
+          ...item,
+          id: Date.now(),
+          descricao: nomeParcial,
+          valor: valorPago,
+          efetivado: true,
+          previsto: false
+        };
+        const itemRestante = {
+          ...item,
+          valor: item.valor - valorPago
+        };
+        const novasEntradas = data.entradas.map(e => e.id === item.id ? itemRestante : e);
+        novasEntradas.unshift(itemRecebido);
+        updateData({ ...data, entradas: novasEntradas });
+      } else {
+        const itemPago = {
+          ...item,
+          id: Date.now(),
+          descricao: nomeParcial,
+          valor: valorPago,
+          efetivado: true,
+          previsto: false,
+          itens: undefined
+        };
+        const itemRestante = {
+          ...item,
+          valor: item.valor - valorPago
+        };
+        const novosGastos = data.gastos.map(g => g.id === item.id ? itemRestante : g);
+        novosGastos.unshift(itemPago);
+        updateData({ ...data, gastos: novosGastos });
+      }
+      showToast(`✓ Pagamento parcial de ${fmt(valorPago)} registrado!`);
+    }
+
+    setEfetivandoItem(null);
+  }
+
   function openEdit(tipo, item){ setEditItem({tipo,item}); setEditForm({...item}); }
   function saveEdit() {
     if (!editForm.descricao||!editForm.valor) return;
@@ -960,6 +1029,78 @@ export default function App() {
             <div style={{ display:"flex", gap:8, marginTop:6 }}>
               <button onClick={()=>setEditItem(null)} style={{ ...baseBtn, flex:1, background:CLR.neutral.card, color:"#e2e8f0", border:`1px solid ${CLR.neutral.border}` }}>Cancelar</button>
               <button onClick={saveEdit} style={{ ...baseBtn, flex:1, background:editItem.tipo==="entrada"?CLR.entrada.bg:CLR.gasto.bg, color:editItem.tipo==="entrada"?CLR.entrada.text:CLR.gasto.text, border:`1px solid ${editItem.tipo==="entrada"?CLR.entrada.border:CLR.gasto.border}` }}>Salvar</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal Efetivação / Pagamento Parcial */}
+      {efetivandoItem && (
+        <Modal 
+          title={efetivandoItem.tipo === "entrada" ? "✓ Confirmar Recebimento" : "✓ Confirmar Pagamento"} 
+          accent={efetivandoItem.tipo === "entrada" ? "entrada" : "gasto"} 
+          onClose={() => setEfetivandoItem(null)}
+        >
+          <div style={{ display: "grid", gap: 14 }}>
+            <div>
+              <div style={{ fontSize: 13, color: CLR.neutral.label, marginBottom: 4 }}>CONTA / LANÇAMENTO</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#e2e8f0" }}>{efetivandoItem.item.descricao}</div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <div>
+                <div style={{ fontSize: 11, color: CLR.neutral.muted, marginBottom: 4 }}>VALOR TOTAL</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: CLR.neutral.label, background: CLR.neutral.bg, border: `1px solid ${CLR.neutral.border}`, borderRadius: 8, padding: "8px 12px" }}>
+                  {fmt(efetivandoItem.item.valor)}
+                </div>
+              </div>
+              <div>
+                <InputField 
+                  label="VALOR PAGO (R$)" 
+                  type="number" 
+                  placeholder="0,00" 
+                  value={valorPagoForm} 
+                  onChange={e => setValorPagoForm(e.target.value)} 
+                />
+              </div>
+            </div>
+
+            {parseFloat(valorPagoForm) < efetivandoItem.item.valor && parseFloat(valorPagoForm) > 0 && (
+              <div style={{ 
+                background: "rgba(212,194,42,0.1)", 
+                border: `1px solid ${CLR.prevista.border}`, 
+                borderRadius: 10, 
+                padding: "10px 14px", 
+                fontSize: 12,
+                color: CLR.prevista.text,
+                lineHeight: 1.4
+              }}>
+                <strong>⚠️ Pagamento Parcial Detectado:</strong><br />
+                • Valor Efetivado (Pago): <strong>{fmt(parseFloat(valorPagoForm))}</strong><br />
+                • Saldo Restante (Pendente): <strong>{fmt(efetivandoItem.item.valor - parseFloat(valorPagoForm))}</strong> (continuará listado como previsto)
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <button 
+                onClick={() => setEfetivandoItem(null)} 
+                style={{ ...baseBtn, flex: 1, background: CLR.neutral.card, color: "#e2e8f0", border: `1px solid ${CLR.neutral.border}` }}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmarEfetivacao} 
+                style={{ 
+                  ...baseBtn, 
+                  flex: 1, 
+                  background: efetivandoItem.tipo === "entrada" ? CLR.entrada.bg : CLR.gasto.bg, 
+                  color: efetivandoItem.tipo === "entrada" ? CLR.entrada.text : CLR.gasto.text, 
+                  border: `1px solid ${efetivandoItem.tipo === "entrada" ? CLR.entrada.border : CLR.gasto.border}`,
+                  fontWeight: 700
+                }}
+              >
+                Confirmar
+              </button>
             </div>
           </div>
         </Modal>
