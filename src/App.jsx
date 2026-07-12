@@ -185,7 +185,7 @@ function ItemRow({ item, tipo, onEdit, onDelete, onEfetivar }) {
         <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap", justifyContent:"flex-end" }} onClick={e => e.stopPropagation()}>
           <span style={{ fontWeight:700, fontSize:15, color:c.text }}>{fmt(item.valor)}</span>
           {isPrevisto && !isEfetivado && (
-            <button onClick={()=>onEfetivar(tipo,item.id)} style={{ ...baseBtn, background:"#0d3d2e", color:"#2ecc8f", border:"1px solid #1a6647", padding:"5px 9px", fontSize:12 }}>✓ Efetivar</button>
+            <button onClick={()=>onEfetivar(tipo,item)} style={{ ...baseBtn, background:"#0d3d2e", color:"#2ecc8f", border:"1px solid #1a6647", padding:"5px 9px", fontSize:12 }}>✓ Efetivar</button>
           )}
           <button onClick={()=>onEdit(tipo,item)} style={{ ...baseBtn, background:CLR.neutral.bg, color:CLR.neutral.label, border:`1px solid ${CLR.neutral.border}`, padding:"5px 9px" }}>✏️</button>
           <button onClick={()=>onDelete(tipo,item.id,item.grupoId)} style={{ ...baseBtn, background:CLR.gasto.bg, color:CLR.gasto.text, border:`1px solid ${CLR.gasto.border}`, padding:"5px 9px" }}>🗑</button>
@@ -613,9 +613,23 @@ export default function App() {
     updateData(novoData);
   }
 
-  function efetivar(tipo, item) {
-    setEfetivandoItem({ tipo, item });
-    setValorPagoForm(item.valor.toString());
+  function efetivar(tipo, itemOrId) {
+    let itemEncontrado;
+    if (typeof itemOrId === "object" && itemOrId !== null) {
+      itemEncontrado = itemOrId;
+    } else {
+      itemEncontrado = tipo === "entrada"
+        ? (data.entradas || []).find(e => e.id === itemOrId)
+        : (data.gastos || []).find(g => g.id === itemOrId);
+    }
+
+    if (!itemEncontrado) {
+      showToast("Lançamento não encontrado.");
+      return;
+    }
+
+    setEfetivandoItem({ tipo, item: itemEncontrado });
+    setValorPagoForm(itemEncontrado.valor.toString());
   }
 
   function confirmarEfetivacao() {
