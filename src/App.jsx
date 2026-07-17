@@ -160,84 +160,76 @@ function ItemRow({ item, tipo, onEdit, onDelete, onEfetivar }) {
   const isParcela = item.totalParcelas > 1;
   const isPrevisto = !!item.previsto;
   const isEfetivado = !!item.efetivado;
-  const c = tipo==="entrada"
-    ? (isPrevisto && !isEfetivado ? CLR.prevista : CLR.entrada)
-    : (isPrevisto && !isEfetivado ? CLR.prevista : isParcela ? CLR.parcela : CLR.gasto);
   const temItens = tipo === "gasto" && item.itens && item.itens.length > 0;
 
+  const avatarBg = tipo === "entrada"
+    ? "var(--primary)"
+    : item.responsavel === "Casal" 
+      ? "var(--warning)" 
+      : item.responsavel === "Lene" 
+        ? "var(--positive)" 
+        : "var(--primary)";
+
+  const avatarTexto = tipo === "entrada"
+    ? (item.quem === "Lene" ? "Le" : "L")
+    : (item.responsavel === "Casal" ? "C" : item.responsavel === "Lene" ? "Le" : "L");
+
   return (
-    <div style={{ display:"flex", flexDirection:"column", marginBottom: 8 }}>
+    <div style={{ display:"flex", flexDirection:"column", width: "100%", marginBottom: 8 }}>
       <div 
+        className="expense-item" 
         onClick={() => temItens && setExpandido(!expandido)}
-        style={{ 
-          display:"flex", 
-          justifyContent:"space-between", 
-          alignItems:"center", 
-          padding:"11px 14px", 
-          background:CLR.neutral.card, 
-          border:`1px solid ${CLR.neutral.border}`, 
-          borderLeft:`3px solid ${c.text}`, 
-          borderRadius: temItens && expandido ? "10px 10px 0 0" : 10,
-          opacity:isPrevisto&&!isEfetivado?0.85:1,
-          cursor: temItens ? "pointer" : "default",
-          transition: "border-radius 0.2s"
-        }}
+        style={{ cursor: temItens ? "pointer" : "default" }}
       >
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <div style={{ width:34, height:34, borderRadius:"50%", background:c.bg, border:`1px solid ${c.border}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>
-            {tipo==="entrada" ? (isPrevisto&&!isEfetivado?"🔮":"↑") : (isPrevisto&&!isEfetivado?"🔮":isParcela?"💳":"↓")}
+        <div className="expense-avatar" style={{ "--avatar-bg": avatarBg }}>{avatarTexto}</div>
+        
+        <div className="expense-info">
+          <div className="expense-description">
+            {item.descricao}
+            {temItens && (
+              <span style={{ fontSize: 10, color: "var(--text-tertiary)", marginLeft: 6 }}>
+                📋 {item.itens.length} {item.itens.length === 1 ? "item" : "itens"} {expandido ? "▲" : "▼"}
+              </span>
+            )}
           </div>
-          <div>
-            <div style={{ fontSize:14, fontWeight:500, color:"#e2e8f0", display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-              {item.descricao}
-              {isParcela && <span style={{ fontSize:11, background:CLR.parcela.bg, color:CLR.parcela.text, border:`1px solid ${CLR.parcela.border}`, borderRadius:99, padding:"1px 7px" }}>{item.parcela}/{item.totalParcelas}</span>}
-              <StatusBadge previsto={isPrevisto} efetivado={isEfetivado} />
-              {temItens && (
-                <span style={{ 
-                  fontSize: 10, 
-                  background: CLR.neutral.bg, 
-                  color: CLR.neutral.label, 
-                  border: `1px solid ${CLR.neutral.border}`, 
-                  borderRadius: 99, 
-                  padding: "1px 6px", 
-                  display: "inline-flex", 
-                  alignItems: "center", 
-                  gap: 3 
-                }}>
-                  📋 {item.itens.length} {item.itens.length === 1 ? "item" : "itens"} {expandido ? "▲" : "▼"}
-                </span>
-              )}
-            </div>
-            <div style={{ fontSize:11, color:CLR.neutral.muted, marginTop:2, display:"flex", gap:6, flexWrap:"wrap" }}>
-              {tipo==="entrada"
-                ? <><Badge color={c.text}>{item.quem}</Badge><span>{item.data}</span></>
-                : <><Badge color={c.text}>{item.categoria}</Badge><Badge color={CLR.neutral.label}>{item.responsavel}</Badge><span>{item.data}</span></>}
-            </div>
+          <div className="expense-tags">
+            <span className="tag tag-category">{tipo === "entrada" ? item.quem : item.categoria}</span>
+            {isParcela && <span className="tag tag-installment">{item.parcela}/{item.totalParcelas}</span>}
+            <span className={`tag tag-status ${isPrevisto && !isEfetivado ? "pending" : "settled"}`}>
+              {isPrevisto && !isEfetivado ? "Previsto" : "Efetivado"}
+            </span>
           </div>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap", justifyContent:"flex-end" }} onClick={e => e.stopPropagation()}>
-          <span style={{ fontWeight:700, fontSize:15, color:c.text }}>{fmt(item.valor)}</span>
+
+        <div className="expense-amount-section">
+          <span className="expense-value" style={{ color: tipo === "entrada" ? "var(--positive)" : (isPrevisto && !isEfetivado ? "var(--warning)" : "var(--text-primary)") }}>{fmt(item.valor)}</span>
+          <span className="expense-date">{item.data}</span>
+        </div>
+
+        <div className="expense-actions" onClick={e => e.stopPropagation()}>
           {isPrevisto && !isEfetivado && (
-            <button onClick={()=>onEfetivar(tipo,item)} style={{ ...baseBtn, background:"#0d3d2e", color:"#2ecc8f", border:"1px solid #1a6647", padding:"5px 9px", fontSize:12 }}>✓ Efetivar</button>
+            <button className="expense-action-btn edit" onClick={() => onEfetivar(tipo, item)} title="Efetivar lançamento">✓</button>
           )}
-          <button onClick={()=>onEdit(tipo,item)} style={{ ...baseBtn, background:CLR.neutral.bg, color:CLR.neutral.label, border:`1px solid ${CLR.neutral.border}`, padding:"5px 9px" }}>✏️</button>
-          <button onClick={()=>onDelete(tipo,item.id,item.grupoId)} style={{ ...baseBtn, background:CLR.gasto.bg, color:CLR.gasto.text, border:`1px solid ${CLR.gasto.border}`, padding:"5px 9px" }}>🗑</button>
+          <button className="expense-action-btn edit" onClick={() => onEdit(tipo, item)} title="Editar">✏️</button>
+          <button className="expense-action-btn delete" onClick={() => onDelete(tipo, item.id, item.grupoId)} title="Excluir">🗑️</button>
         </div>
       </div>
+      
       {temItens && expandido && (
         <div style={{
-          background: "#1c1c2b",
-          border: `1px solid ${CLR.neutral.border}`,
+          background: "var(--bg-primary)",
+          border: "1px solid var(--glass-border)",
           borderTop: "none",
-          borderRadius: "0 0 10px 10px",
+          borderRadius: "0 0 var(--radius-md) var(--radius-md)",
           padding: "10px 14px 10px 48px",
           display: "grid",
-          gap: 6
+          gap: 6,
+          animation: "fadeInUp 0.2s ease both"
         }}>
           {item.itens.map((it, idx) => (
-            <div key={idx} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", fontSize:12, color:CLR.neutral.label }}>
+            <div key={idx} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", fontSize:12, color:"var(--text-secondary)" }}>
               <span>▪ {it.descricao}</span>
-              <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{fmt(it.valor)}</span>
+              <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{fmt(it.valor)}</span>
             </div>
           ))}
         </div>
@@ -1187,123 +1179,108 @@ export default function App() {
         </div>
       )}
 
-      {/* Header / Topbar */}
-      <div style={{ padding:"0.75rem 1.25rem", display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:`1px solid ${CLR.neutral.border}`, background: "#1a1a26" }}>
-        {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #4f46e5)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff" }}>F</div>
-          <span style={{ fontWeight: 700, fontSize: 16, color: "#ffffff", letterSpacing: "0.2px" }}>Finanças Guerreiros</span>
-        </div>
-        
-        {/* Profile / Dropdown */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {saving && <span style={{ fontSize:11, color:CLR.neutral.muted }}>💾 Salvando...</span>}
-          {!isModeOnline && <span style={{ fontSize:11, color:CLR.prevista.text, background: "rgba(212,194,42,0.08)", border: `1px solid ${CLR.prevista.border}`, borderRadius: 99, padding: "2px 8px" }}>Modo Local</span>}
-          <div 
-            onClick={handleLogout} 
-            title="Clique para desconectar" 
-            style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              gap: 8, 
-              cursor: "pointer", 
-              background: "rgba(255,255,255,0.03)", 
-              padding: "4px 10px", 
-              borderRadius: 20, 
-              border: `1px solid ${CLR.neutral.border}` 
-            }}
-          >
-            <div style={{ width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg, #8b5cf6, #3b82f6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff" }}>👩‍❤️‍👨</div>
-            <span style={{ fontSize: 12, fontWeight: 500, color: "#e2e8f0" }}>Lucas & Lene</span>
-            <span style={{ fontSize: 8, color: CLR.neutral.muted }}>▼</span>
+      {/* Header */}
+      <header className="app-header">
+        <div className="header-left">
+          <div className="app-logo">
+            <span className="logo-icon">💰</span>
+            <h1 className="logo-text">Finanças Guerreiros</h1>
           </div>
         </div>
-      </div>
-
-      {/* Navegação + Filtro na mesma linha */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", padding: "0.5rem 1.25rem", borderBottom: `1px solid ${CLR.neutral.border}`, gap: 10 }}>
-        {/* Abas Estilo Pílula */}
-        <div style={{ display:"flex", gap: 4, overflowX:"auto", scrollbarWidth:"none" }}>
-          {tabs.map(t=>(
-            <button 
-              key={t.key} 
-              onClick={()=>setTab(t.key)} 
-              style={{ 
-                background: tab===t.key ? "#25253a" : "transparent", 
-                border: tab===t.key ? `1px solid ${CLR.neutral.border}` : "1px solid transparent", 
-                borderRadius: 99, 
-                cursor:"pointer", 
-                padding:"6px 14px", 
-                fontSize:13, 
-                fontWeight: 500,
-                color: tab===t.key ? "#e2e8f0" : CLR.neutral.muted, 
-                whiteSpace:"nowrap", 
-                display:"flex", 
-                alignItems:"center", 
-                gap: 5,
-                transition: "all 0.2s"
-              }}
+        <div className="header-right">
+          {/* Seletor de Período Pill-Style */}
+          <div className="period-selector">
+            <select 
+              value={tipoFiltro} 
+              onChange={e=>setTipoFiltro(e.target.value)} 
+              className="period-btn active"
+              style={{ background: "none", border: "none", color: "var(--primary-light)", cursor: "pointer", outline: "none", fontFamily: "var(--font-family)", fontSize: "var(--fs-sm)", fontWeight: "var(--fw-medium)" }}
             >
-              <span style={{ filter: tab===t.key ? "none" : "grayscale(1) opacity(0.7)" }}>{t.icon}</span> {t.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Filtro de Período Arredondado */}
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <select value={tipoFiltro} onChange={e=>setTipoFiltro(e.target.value)} style={{ ...baseInput, width:"auto", padding:"5px 10px", fontSize:12, borderRadius: 20 }}>
-            <option value="mensal">Mensal</option>
-            <option value="periodo">Período</option>
-          </select>
+              <option value="mensal" style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}>Mensal</option>
+              <option value="periodo" style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}>Período</option>
+            </select>
+            <span className="period-divider">|</span>
+            {tipoFiltro === "mensal" ? (
+              <>
+                <select 
+                  value={filtroMes} 
+                  onChange={e=>setFiltroMes(Number(e.target.value))} 
+                  className="period-date"
+                  style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", outline: "none", fontFamily: "var(--font-family)", fontSize: "var(--fs-sm)", fontWeight: "var(--fw-medium)" }}
+                >
+                  {MESES.map((m,i)=><option key={i} value={i} style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}>{m.slice(0,3)}</option>)}
+                </select>
+                <select 
+                  value={filtroAno} 
+                  onChange={e=>setFiltroAno(Number(e.target.value))} 
+                  className="period-year"
+                  style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", outline: "none", fontFamily: "var(--font-family)", fontSize: "var(--fs-sm)", fontWeight: "var(--fw-medium)" }}
+                >
+                  {[2024,2025,2026,2027].map(a=><option key={a} value={a} style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}>{a}</option>)}
+                </select>
+              </>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <input 
+                  type="date" 
+                  value={filtroDataInicio} 
+                  onChange={e=>setFiltroDataInicio(e.target.value)} 
+                  style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "var(--fs-xs)", cursor: "pointer", outline: "none", width: 90, fontFamily: "var(--font-family)" }} 
+                />
+                <span style={{ fontSize: 10, color: "var(--text-tertiary)" }}>-</span>
+                <input 
+                  type="date" 
+                  value={filtroDataFim} 
+                  onChange={e=>setFiltroDataFim(e.target.value)} 
+                  style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "var(--fs-xs)", cursor: "pointer", outline: "none", width: 90, fontFamily: "var(--font-family)" }} 
+                />
+              </div>
+            )}
+          </div>
           
-          {tipoFiltro === "mensal" ? (
-            <div style={{ display:"flex", gap:4, background: CLR.neutral.card, border: `1px solid ${CLR.neutral.border}`, borderRadius: 20, padding: "2px 6px" }}>
-              <select value={filtroMes} onChange={e=>setFiltroMes(Number(e.target.value))} style={{ background: "transparent", border: "none", color: "#e2e8f0", fontSize: 12, padding: "3px 6px", outline: "none", cursor: "pointer" }}>
-                {MESES.map((m,i)=><option key={i} value={i} style={{ background: CLR.neutral.bg }}>{m}</option>)}
-              </select>
-              <select value={filtroAno} onChange={e=>setFiltroAno(Number(e.target.value))} style={{ background: "transparent", border: "none", color: "#e2e8f0", fontSize: 12, padding: "3px 6px", outline: "none", cursor: "pointer" }}>
-                {[2024,2025,2026,2027].map(a=><option key={a} value={a} style={{ background: CLR.neutral.bg }}>{a}</option>)}
-              </select>
+          <div className="sync-status">
+            <span className={`sync-dot ${isModeOnline ? "online" : ""}`}></span>
+            <span className="sync-text">{isModeOnline ? "Sincronizado" : "Local"}</span>
+          </div>
+          
+          <div className="user-profile">
+            <div className="avatar-group">
+              <span className="avatar" style={{ "--avatar-color": "#6C5CE7" }}>L</span>
+              <span className="avatar" style={{ "--avatar-color": "#2ECC71" }}>Le</span>
             </div>
-          ) : (
-            <div style={{ display:"flex", alignItems:"center", gap:4, background: CLR.neutral.card, border: `1px solid ${CLR.neutral.border}`, borderRadius: 20, padding: "2px 8px" }}>
-              <input type="date" value={filtroDataInicio} onChange={e=>setFiltroDataInicio(e.target.value)} style={{ background: "transparent", border: "none", color: "#e2e8f0", fontSize: 12, outline: "none", cursor: "pointer", width: 105 }} />
-              <span style={{ fontSize:10, color:CLR.neutral.muted }}>à</span>
-              <input type="date" value={filtroDataFim} onChange={e=>setFiltroDataFim(e.target.value)} style={{ background: "transparent", border: "none", color: "#e2e8f0", fontSize: 12, outline: "none", cursor: "pointer", width: 105 }} />
-            </div>
-          )}
+            <span className="user-name">Lucas & Lene</span>
+          </div>
+          
+          <button className="btn-logout" onClick={handleLogout}>Sair</button>
         </div>
-      </div>
+      </header>
+
+      <nav className="tab-navigation">
+        {tabs.map(t=>(
+          <button 
+            key={t.key} 
+            onClick={()=>setTab(t.key)} 
+            className={`tab-item ${tab===t.key ? "active" : ""}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
 
       <div style={{ padding:"1.25rem" }}>
 
         {/* Alerta de Despesas Pendentes de Meses Anteriores */}
+        {/* Alerta de Despesas Pendentes de Meses Anteriores */}
         {gastosPendentesAnteriores.length > 0 && (
-          <div style={{
-            background: "#2a1e12",
-            border: "1px solid #7c4a15",
-            borderRadius: 12,
-            padding: "12px 16px",
-            marginBottom: 16,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 12,
-            flexWrap: "wrap",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 18 }}>⚠️</span>
-              <div style={{ fontSize: 13, color: "#ffb055", fontWeight: 500 }}>
-                Atenção: Você tem <strong>{gastosPendentesAnteriores.length} despesa(s) prevista(s) pendente(s)</strong> de meses passados (Total: <strong>{fmt(totalPendentesAnteriores)}</strong>)
-              </div>
+          <div className="alert-banner">
+            <div className="alert-content">
+              <span className="alert-icon">⚠️</span>
+              <span className="alert-text">
+                Você tem <strong>{gastosPendentesAnteriores.length} {gastosPendentesAnteriores.length === 1 ? "despesa pendente" : "despesas pendentes"}</strong> de meses passados
+                <span className="alert-amount"> ({fmt(totalPendentesAnteriores)})</span>
+              </span>
             </div>
-            <button
-              onClick={() => setVerPendenciasAnteriores(true)}
-              style={{ ...baseBtn, background: "#5c330a", color: "#ffaa44", border: "1px solid #7c4a15", padding: "6px 12px", fontSize: 12, fontWeight: 600 }}
-            >
-              🔍 Resolver Pendências
-            </button>
+            <button className="alert-action" onClick={() => setVerPendenciasAnteriores(true)}>Resolver →</button>
           </div>
         )}
 
@@ -1343,191 +1320,175 @@ export default function App() {
 
         {/* DASHBOARD */}
         {tab==="dashboard" && (
-          <div className="dashboard-grid" style={{ 
-            display: "grid", 
-            gridTemplateColumns: "2fr 1fr", 
-            gap: "16px",
-            alignItems: "start",
-            width: "100%",
-            boxSizing: "border-box"
-          }}>
-            {/* Coluna da Esquerda (Cartões de Resumo + Categorias) */}
-            <div style={{ display: "grid", gap: "16px" }}>
-              {/* Grid 2x2 de Cartões de Resumo */}
-              <div style={{ 
-                display: "grid", 
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
-                gap: "12px" 
-              }}>
-                <DashboardCard 
-                  label="Entradas efetivadas:" 
-                  value={fmt(totalEntradas)} 
-                  icon="↗" 
-                  legend="Movimentações de entradas efetivas" 
-                  trend="↗" 
-                  color={CLR.entrada.text} 
-                  gradient="linear-gradient(135deg, #0d3d2e 0%, #112620 100%)" 
-                  border={`1px solid ${CLR.entrada.border}`}
-                  watermark="🪙"
-                />
-                <DashboardCard 
-                  label="Gastos efetivados:" 
-                  value={fmt(totalGastos)} 
-                  icon="—" 
-                  legend="Movimentações de gastos efetivados" 
-                  trend="—" 
-                  color={CLR.gasto.text} 
-                  gradient="linear-gradient(135deg, #3d1515 0%, #261717 100%)" 
-                  border={`1px solid ${CLR.gasto.border}`}
-                  watermark="🐖"
-                />
-                <DashboardCard 
-                  label="Saldo do mês:" 
-                  value={fmt(saldo)} 
-                  icon={saldo >= 0 ? "✓" : "⚠️"} 
-                  legend="Saldo líquido calculado do período" 
-                  trend="" 
-                  color={saldo >= 0 ? CLR.entrada.text : CLR.gasto.text} 
-                  gradient={saldo >= 0 ? "linear-gradient(135deg, #0d3d2e 0%, #112620 100%)" : "linear-gradient(135deg, #3d1515 0%, #261717 100%)"} 
-                  border={saldo >= 0 ? `1px solid ${CLR.entrada.border}` : `1px solid ${CLR.gasto.border}`}
-                  watermark="⚖️"
-                />
-                <DashboardCard 
-                  label="Prev. gastos:" 
-                  value={fmt(previstosG)} 
-                  icon="🕒" 
-                  legend="Despesas previstas pendentes" 
-                  trend="" 
-                  color={CLR.prevista.text} 
-                  gradient="linear-gradient(135deg, #1d1d2b 0%, #161622 100%)" 
-                  border={`1px solid ${CLR.neutral.border}`}
-                  watermark="🕒"
-                />
+          <div>
+            {/* Cards de KPI */}
+            <section className="kpi-grid">
+              <div className="kpi-card gradient-green">
+                <div className="kpi-header">
+                  <span className="kpi-label">Entradas efetivadas</span>
+                  <span className="kpi-icon-bg">📈</span>
+                </div>
+                <span className="kpi-value">{fmt(totalEntradas)}</span>
+                <div className="kpi-footer">
+                  <span className="kpi-meta">{efetivadas.length} {efetivadas.length === 1 ? "registro" : "registros"}</span>
+                  <span className="kpi-trend positive">Ativo</span>
+                </div>
+              </div>
+              
+              <div className="kpi-card gradient-red">
+                <div className="kpi-header">
+                  <span className="kpi-label">Gastos efetivados</span>
+                  <span className="kpi-icon-bg">📉</span>
+                </div>
+                <span className="kpi-value">{fmt(totalGastos)}</span>
+                <div className="kpi-footer">
+                  <span className="kpi-meta">{efetivadosG.length} {efetivadosG.length === 1 ? "registro" : "registros"}</span>
+                  <span className="kpi-trend negative">Ativo</span>
+                </div>
+              </div>
+              
+              <div className="kpi-card gradient-amber">
+                <div className="kpi-header">
+                  <span className="kpi-label">Saldo do mês</span>
+                  <span className="kpi-icon-bg">⚠️</span>
+                </div>
+                <span className={`kpi-value ${saldo < 0 ? "negative" : ""}`}>{fmt(saldo)}</span>
+                <div className="kpi-footer">
+                  <span className="kpi-meta">{mesLabel}</span>
+                  <span className={`kpi-badge ${saldo < 0 ? "danger" : "pending"}`} style={{ background: saldo >= 0 ? "var(--positive-bg)" : "", color: saldo >= 0 ? "var(--positive)" : "" }}>
+                    {saldo >= 0 ? "Positivo" : "Negativo"}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="kpi-card gradient-blue">
+                <div className="kpi-header">
+                  <span className="kpi-label">Prev. gastos</span>
+                  <span className="kpi-icon-bg">⏳</span>
+                </div>
+                <span className="kpi-value">{fmt(previstosG)}</span>
+                <div className="kpi-footer">
+                  <span className="kpi-meta">Ainda não efetivado</span>
+                  <span className="kpi-badge pending">Pendente</span>
+                </div>
+              </div>
+            </section>
+
+            {/* Breakdowns Laterais */}
+            <section className="breakdown-grid">
+              <div className="breakdown-card">
+                <h3 className="breakdown-title">Entradas por pessoa</h3>
+                <div className="breakdown-items">
+                  <div className={`breakdown-item ${entradasLucas === 0 ? "muted" : ""}`}>
+                    <div className="item-label">
+                      <span className="item-dot" style={{ "--dot-color": "var(--primary)" }}></span>
+                      <span>Lucas</span>
+                    </div>
+                    <span className="item-value">{fmt(entradasLucas)}</span>
+                  </div>
+                  <div className={`breakdown-item ${entradasLene === 0 ? "muted" : ""}`}>
+                    <div className="item-label">
+                      <span className="item-dot" style={{ "--dot-color": "var(--positive)" }}></span>
+                      <span>Lene</span>
+                    </div>
+                    <span className="item-value">{fmt(entradasLene)}</span>
+                  </div>
+                </div>
               </div>
 
-              {/* Gastos vs Orçamento */}
-              <Card style={{ background: CLR.neutral.card, border: `1px solid ${CLR.neutral.border}` }}>
-                <div style={{ fontSize:13, fontWeight:600, marginBottom:16, color:"#e2e8f0" }}>Gastos vs. Orçamento por categoria</div>
-                
-                {categorias.map(cat => {
-                  const orc = (data.orcamentos || {})[cat] || 0;
-                  const gasto = gastosPorCategoria[cat] || 0;
-                  if (gasto === 0 && orc === 0) return null; // Oculta se não houver orçamento nem gasto
-                  
-                  const limiteEstourado = orc > 0 && gasto > orc;
-                  const progressoCor = limiteEstourado ? CLR.gasto.text : CLR.entrada.text;
-
-                  return (
-                    <div key={cat} style={{ marginBottom: 14 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 13, marginBottom: 4 }}>
-                        <span style={{ color: CLR.neutral.label }}>{cat}</span>
-                        <span style={{ fontWeight: 600, color: limiteEstourado ? CLR.gasto.text : "#e2e8f0" }}>
-                          {fmt(gasto)}
-                          <span style={{ color: CLR.neutral.muted, fontWeight: 400, fontSize: 11, marginLeft: 4 }}>
-                            / {orc > 0 ? fmt(orc) : "Sem limite"}
-                          </span>
-                        </span>
-                      </div>
-                      {orc > 0 && (
-                        <ProgressBar val={gasto} max={orc} color={progressoCor} />
-                      )}
-                    </div>
-                  );
-                })}
-
-                {categorias.every(c => (gastosPorCategoria[c] || 0) === 0 && ((data.orcamentos || {})[c] || 0) === 0) && (
-                  <div style={{ fontSize: 13, color: CLR.neutral.muted, textAlign: "center", padding: "1rem 0" }}>
-                    Nenhum gasto ou orçamento definido para este mês.
-                  </div>
-                )}
-              </Card>
-            </div>
-
-            {/* Coluna da Direita (Painel Lateral) */}
-            <div style={{ display: "grid", gap: "16px" }}>
-              {/* Card Donut Chart */}
-              {(() => {
-                const totalE = entradasLucas + entradasLene;
-                const pctLucas = totalE > 0 ? (entradasLucas / totalE) * 100 : 0;
-                return (
-                  <Card style={{ background: CLR.neutral.card, border: `1px solid ${CLR.neutral.border}` }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 16, color: "#e2e8f0" }}>Entradas por pessoa</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                      {/* Donut Chart em CSS */}
-                      <div style={{
-                        width: 76,
-                        height: 76,
-                        borderRadius: "50%",
-                        background: totalE > 0 
-                          ? `conic-gradient(#6366f1 0% ${pctLucas}%, #10b981 ${pctLucas}% 100%)` 
-                          : "#333355",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0
-                      }}>
-                        <div style={{ width: 50, height: 50, borderRadius: "50%", background: CLR.neutral.card }} />
-                      </div>
-
-                      {/* Legenda */}
-                      <div style={{ display: "grid", gap: 8, flex: 1 }}>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
-                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6366f1" }} />
-                            <span style={{ color: CLR.neutral.label }}>Lucas</span>
-                          </div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0", marginLeft: 14 }}>{fmt(entradasLucas)}</div>
-                        </div>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
-                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />
-                            <span style={{ color: CLR.neutral.label }}>Lene</span>
-                          </div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0", marginLeft: 14 }}>{fmt(entradasLene)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })()}
-
-              {/* Card Gastos por Responsável */}
-              <Card style={{ background: CLR.neutral.card, border: `1px solid ${CLR.neutral.border}` }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 16, color: "#e2e8f0" }}>Gastos por responsável</div>
+              <div className="breakdown-card">
+                <h3 className="breakdown-title">Gastos por responsável</h3>
                 {(() => {
                   const rCasal = gastosPorPessoa["Casal"] || 0;
                   const rLucas = gastosPorPessoa["Lucas"] || 0;
                   const rLene = gastosPorPessoa["Lene"] || 0;
                   const totalG = rCasal + rLucas + rLene;
+                  const maxG = totalG || 1;
 
                   return (
-                    <div style={{ display: "grid", gap: 12 }}>
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                          <span style={{ color: CLR.neutral.label }}>Casal</span>
-                          <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{fmt(rCasal)}</span>
+                    <div className="progress-list">
+                      <div className="progress-item">
+                        <div className="progress-header">
+                          <span className="progress-label">Casal</span>
+                          <span className="progress-value">{fmt(rCasal)}</span>
                         </div>
-                        <ProgressBar val={rCasal} max={totalG || 1} color="#6366f1" />
+                        <div className="progress-track">
+                          <div className="progress-fill" style={{ width: `${Math.min(100, (rCasal / maxG) * 100)}%`, background: "var(--warning)" }}></div>
+                        </div>
                       </div>
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                          <span style={{ color: CLR.neutral.label }}>Lucas</span>
-                          <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{fmt(rLucas)}</span>
+                      <div className="progress-item">
+                        <div className="progress-header">
+                          <span className="progress-label">Lucas</span>
+                          <span className="progress-value">{fmt(rLucas)}</span>
                         </div>
-                        <ProgressBar val={rLucas} max={totalG || 1} color="#10b981" />
+                        <div className="progress-track">
+                          <div className="progress-fill" style={{ width: `${Math.min(100, (rLucas / maxG) * 100)}%`, background: "var(--primary)" }}></div>
+                        </div>
                       </div>
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
-                          <span style={{ color: CLR.neutral.label }}>Lene</span>
-                          <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{fmt(rLene)}</span>
+                      <div className="progress-item">
+                        <div className="progress-header">
+                          <span className="progress-label">Lene</span>
+                          <span className="progress-value">{fmt(rLene)}</span>
                         </div>
-                        <ProgressBar val={rLene} max={totalG || 1} color="#f43f5e" />
+                        <div className="progress-track">
+                          <div className="progress-fill" style={{ width: `${Math.min(100, (rLene / maxG) * 100)}%`, background: "var(--positive)" }}></div>
+                        </div>
                       </div>
                     </div>
                   );
                 })()}
-              </Card>
-            </div>
+              </div>
+            </section>
+
+            {/* Gastos vs. Orçamento */}
+            <section className="budget-section">
+              <h2 className="section-title">Gastos vs. Orçamento por categoria</h2>
+              <div className="budget-list">
+                {categorias.map(cat => {
+                  const orc = (data.orcamentos || {})[cat] || 0;
+                  const gasto = gastosPorCategoria[cat] || 0;
+                  if (gasto === 0 && orc === 0) return null;
+
+                  const limiteEstourado = orc > 0 && gasto > orc;
+                  const pct = orc > 0 ? Math.min(100, (gasto / orc) * 100) : 0;
+                  const pctTexto = orc > 0 ? `${Math.round((gasto / orc) * 100)}%` : "Sem limite";
+
+                  // Emojis de categorias correspondentes para o visual
+                  const emojiCat = cat === "Transporte" ? "🚗" : cat === "Alimentação" ? "🍎" : cat === "Beleza" ? "💄" : cat === "Moradia" ? "🏠" : cat === "Educação" ? "📚" : cat === "Lazer" ? "🎬" : "📦";
+
+                  return (
+                    <div key={cat} className={`budget-row ${limiteEstourado ? "over" : "under"}`}>
+                      <div className="budget-category">
+                        <span>{emojiCat}</span>
+                        <span>{cat}</span>
+                      </div>
+                      <div className="budget-bar-wrapper">
+                        <div className="budget-bar">
+                          <div 
+                            className={`budget-bar-fill ${limiteEstourado ? "over" : "under"}`} 
+                            style={{ width: orc > 0 ? `${pct}%` : "100%" }}
+                          ></div>
+                        </div>
+                      </div>
+                      <div className="budget-numbers">
+                        <span className="budget-spent">{fmt(gasto)}</span>
+                        <span className="budget-separator">/</span>
+                        <span className="budget-limit">{orc > 0 ? fmt(orc) : "Sem limite"}</span>
+                      </div>
+                      <span className={`budget-status ${limiteEstourado ? "over" : "under"}`}>
+                        {orc > 0 ? (limiteEstourado ? `+${Math.round(((gasto - orc) / orc) * 100)}%` : pctTexto) : "OK"}
+                      </span>
+                    </div>
+                  );
+                })}
+                
+                {categorias.every(c => (gastosPorCategoria[c] || 0) === 0 && ((data.orcamentos || {})[c] || 0) === 0) && (
+                  <div style={{ fontSize: 13, color: "var(--text-tertiary)", textAlign: "center", padding: "1rem 0" }}>
+                    Nenhum gasto ou orçamento definido para este mês.
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
         )}
 
@@ -1562,67 +1523,76 @@ export default function App() {
         {/* GASTOS */}
         {tab==="gastos" && (
           <div>
-            <Card style={{ marginBottom:18, border:`1px solid ${CLR.gasto.border}` }}>
-              <div style={{ fontSize:14, fontWeight:600, marginBottom:14, color:CLR.gasto.text }}>📉 Adicionar gasto</div>
-              <div style={{ display:"grid", gap:10 }}>
-                <InputField label="Descrição" placeholder="Ex: Fatura Cartão, Netflix..." value={formGasto.descricao} onChange={e=>setFormGasto({...formGasto,descricao:e.target.value})} />
-                
-                {/* Botão para ativar detalhamento de sub-itens */}
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: -4 }}>
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      const novoEstado = !detalharItensForm;
-                      setDetalharItensForm(novoEstado);
-                      if (!novoEstado) {
-                        setItensGastoForm([]);
-                      }
-                    }} 
-                    style={{ 
-                      ...baseBtn, 
-                      background: detalharItensForm ? "rgba(224,85,85,0.1)" : "rgba(123,140,222,0.1)", 
-                      color: detalharItensForm ? CLR.gasto.text : CLR.parcela.text, 
-                      border: `1px solid ${detalharItensForm ? CLR.gasto.border : CLR.parcela.border}`, 
-                      fontSize: 11,
-                      padding: "4px 10px",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4
-                    }}
-                  >
-                    {detalharItensForm ? "✕ Cancelar detalhamento" : "📋 Detalhar itens desta compra"}
-                  </button>
+            {/* Formulário "Adicionar Gasto" */}
+            <section className="form-section">
+              <div className="section-header">
+                <h2 className="section-title">Adicionar gasto</h2>
+              </div>
+              <form className="expense-form" onSubmit={e => e.preventDefault()}>
+                <div className="form-row full-width">
+                  <div className="form-group">
+                    <label className="form-label">DESCRIÇÃO</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="Ex: Fatura Cartão, Netflix..." 
+                      value={formGasto.descricao} 
+                      onChange={e=>setFormGasto({...formGasto,descricao:e.target.value})} 
+                    />
+                    <button 
+                      type="button" 
+                      className="form-expand-link"
+                      onClick={() => {
+                        const novoEstado = !detalharItensForm;
+                        setDetalharItensForm(novoEstado);
+                        if (!novoEstado) {
+                          setItensGastoForm([]);
+                        }
+                      }} 
+                    >
+                      {detalharItensForm ? "✕ Cancelar detalhamento" : "+ Detalhar itens desta compra"}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Área dinâmica de detalhamento de sub-itens */}
                 {detalharItensForm && (
                   <div style={{ 
-                    background: "#1c1c2b", 
-                    border: `1px solid ${CLR.neutral.border}`, 
-                    borderRadius: 10, 
-                    padding: 12,
+                    background: "var(--bg-primary)", 
+                    border: "1px solid var(--glass-border)", 
+                    borderRadius: "var(--radius-md)", 
+                    padding: 16,
                     display: "grid",
-                    gap: 10 
+                    gap: 12 
                   }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: CLR.parcela.text, display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--primary-light)", display: "flex", justifyContent: "space-between" }}>
                       <span>📋 Itens da Compra</span>
                       <span>Total: {fmt(itensGastoForm.reduce((s,i)=>s+Number(i.valor),0))}</span>
                     </div>
                     
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 90px auto", gap: 6, alignItems: "end" }}>
-                      <InputField 
-                        label="Nome do Item" 
-                        placeholder="Ex: Prato, Cortina..." 
-                        value={novoItemDesc} 
-                        onChange={e=>setNovoItemDesc(e.target.value)} 
-                      />
-                      <InputField 
-                        label="Valor (R$)" 
-                        type="number" 
-                        placeholder="0,00" 
-                        value={novoItemValor} 
-                        onChange={e=>setNovoItemValor(e.target.value)} 
-                      />
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 90px auto", gap: 8, alignItems: "end" }}>
+                      <div className="form-group" style={{ gap: 4 }}>
+                        <label className="form-label" style={{ fontSize: 10 }}>Nome do Item</label>
+                        <input 
+                          type="text"
+                          className="form-input"
+                          style={{ height: 36 }}
+                          placeholder="Ex: Prato, Cortina..." 
+                          value={novoItemDesc} 
+                          onChange={e=>setNovoItemDesc(e.target.value)} 
+                        />
+                      </div>
+                      <div className="form-group" style={{ gap: 4 }}>
+                        <label className="form-label" style={{ fontSize: 10 }}>Valor (R$)</label>
+                        <input 
+                          type="number"
+                          className="form-input"
+                          style={{ height: 36 }}
+                          placeholder="0,00" 
+                          value={novoItemValor} 
+                          onChange={e=>setNovoItemValor(e.target.value)} 
+                        />
+                      </div>
                       <button 
                         type="button" 
                         onClick={() => {
@@ -1636,23 +1606,34 @@ export default function App() {
                           setItensGastoForm(novaLista);
                           setNovoItemDesc("");
                           setNovoItemValor("");
-                          // Atualiza o valor total no formGasto
                           const total = novaLista.reduce((s,i) => s + i.valor, 0);
                           setFormGasto(f => ({ ...f, valor: total.toString() }));
                         }}
-                        style={{ ...baseBtn, background: CLR.entrada.bg, color: CLR.entrada.text, border: `1px solid ${CLR.entrada.border}`, height: 35, display: "flex", alignItems: "center", justifyContent: "center" }}
+                        style={{ 
+                          height: 36, 
+                          width: 36, 
+                          background: "var(--primary)", 
+                          color: "white", 
+                          border: "none", 
+                          borderRadius: "var(--radius-md)", 
+                          cursor: "pointer", 
+                          display: "flex", 
+                          alignItems: "center", 
+                          justifyContent: "center",
+                          fontSize: 14 
+                        }}
                       >
                         ➕
                       </button>
                     </div>
 
                     {itensGastoForm.length > 0 && (
-                      <div style={{ display: "grid", gap: 4, marginTop: 4 }}>
+                      <div style={{ display: "grid", gap: 6, marginTop: 4 }}>
                         {itensGastoForm.map((it) => (
-                          <div key={it.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: CLR.neutral.card, border: `1px solid ${CLR.neutral.border}`, borderRadius: 6, padding: "6px 10px", fontSize: 12 }}>
-                            <span style={{ color: "#e2e8f0" }}>• {it.descricao}</span>
+                          <div key={it.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--bg-card)", border: "1px solid var(--glass-border)", borderRadius: "var(--radius-sm)", padding: "8px 12px", fontSize: 12 }}>
+                            <span style={{ color: "var(--text-primary)" }}>• {it.descricao}</span>
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontWeight: 600, color: CLR.entrada.text }}>{fmt(it.valor)}</span>
+                              <span style={{ fontWeight: 600, color: "var(--positive)" }}>{fmt(it.valor)}</span>
                               <button 
                                 type="button" 
                                 onClick={() => {
@@ -1661,7 +1642,7 @@ export default function App() {
                                   const total = novaLista.reduce((s,i) => s + i.valor, 0);
                                   setFormGasto(f => ({ ...f, valor: total.toString() }));
                                 }} 
-                                style={{ background: "none", border: "none", color: CLR.gasto.text, cursor: "pointer", padding: "2px 4px", fontSize: 11 }}
+                                style={{ background: "none", border: "none", color: "var(--negative)", cursor: "pointer", padding: "2px 4px", fontSize: 12 }}
                               >
                                 ✕
                               </button>
@@ -1673,67 +1654,188 @@ export default function App() {
                   </div>
                 )}
 
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                  <InputField label="Valor por parcela (R$)" type="number" placeholder="0,00" value={formGasto.valor} onChange={e=>setFormGasto({...formGasto,valor:e.target.value})} disabled={detalharItensForm} />
-                  <InputField label="Data da 1ª parcela" type="date" value={formGasto.data} onChange={e=>setFormGasto({...formGasto,data:e.target.value})} />
-                </div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
-                  <SelectField label="Categoria" value={formGasto.categoria} onChange={e=>setFormGasto({...formGasto,categoria:e.target.value})}>
-                    {categorias.map(c=><option key={c}>{c}</option>)}
-                  </SelectField>
-                  <SelectField label="Responsável" value={formGasto.responsavel} onChange={e=>setFormGasto({...formGasto,responsavel:e.target.value})}>
-                    {RESPONSAVEIS.map(r=><option key={r}>{r}</option>)}
-                  </SelectField>
-                  <div>
-                    <div style={{ fontSize:11, color:CLR.neutral.muted, marginBottom:4, fontWeight:500, letterSpacing:0.5, textTransform:"uppercase" }}>Nº de parcelas</div>
-                    <input type="number" min="1" max="60" style={{ ...baseInput, borderColor:parseInt(formGasto.totalParcelas)>1?CLR.parcela.border:CLR.neutral.border }} value={formGasto.totalParcelas} onChange={e=>setFormGasto({...formGasto,totalParcelas:e.target.value})} />
+                <div className="form-row grid-2">
+                  <div className="form-group">
+                    <label className="form-label">VALOR POR PARCELA (R$)</label>
+                    <div className="input-currency">
+                      <span className="currency-prefix">R$</span>
+                      <input 
+                        type="number" 
+                        className="form-input currency-input" 
+                        placeholder="0,00" 
+                        value={formGasto.valor} 
+                        onChange={e=>setFormGasto({...formGasto,valor:e.target.value})} 
+                        disabled={detalharItensForm} 
+                      />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">DATA DA 1ª PARCELA</label>
+                    <div className="input-date-wrapper">
+                      <input 
+                        type="date" 
+                        className="form-input" 
+                        value={formGasto.data} 
+                        onChange={e=>setFormGasto({...formGasto,data:e.target.value})} 
+                      />
+                    </div>
                   </div>
                 </div>
-                {parseInt(formGasto.totalParcelas)>1&&formGasto.valor&&(
-                  <div style={{ background:CLR.parcela.bg, border:`1px solid ${CLR.parcela.border}`, borderRadius:10, padding:"10px 14px", fontSize:12 }}>
-                    <div style={{ color:CLR.parcela.text, fontWeight:600, marginBottom:4 }}>💳 Resumo das parcelas</div>
-                    <div style={{ color:CLR.neutral.label, display:"flex", gap:16, flexWrap:"wrap" }}>
+
+                <div className="form-row grid-3">
+                  <div className="form-group">
+                    <label className="form-label">CATEGORIA</label>
+                    <div className="input-select-wrapper">
+                      <select 
+                        className="form-select"
+                        value={formGasto.categoria} 
+                        onChange={e=>setFormGasto({...formGasto,categoria:e.target.value})}
+                      >
+                        {categorias.map(c=><option key={c}>{c}</option>)}
+                      </select>
+                      <span className="select-chevron">▼</span>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">RESPONSÁVEL</label>
+                    <div className="input-select-wrapper">
+                      <select 
+                        className="form-select"
+                        value={formGasto.responsavel} 
+                        onChange={e=>setFormGasto({...formGasto,responsavel:e.target.value})}
+                      >
+                        {RESPONSAVEIS.map(r=><option key={r}>{r}</option>)}
+                      </select>
+                      <span className="select-chevron">▼</span>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Nº DE PARCELAS</label>
+                    <div className="input-stepper">
+                      <button 
+                        type="button" 
+                        className="stepper-btn"
+                        onClick={() => {
+                          const val = Math.max(1, parseInt(formGasto.totalParcelas || "1") - 1);
+                          setFormGasto({...formGasto, totalParcelas: val.toString()});
+                        }}
+                      >−</button>
+                      <input 
+                        type="text" 
+                        className="stepper-input" 
+                        value={formGasto.totalParcelas} 
+                        onChange={e=>setFormGasto({...formGasto,totalParcelas:e.target.value})} 
+                      />
+                      <button 
+                        type="button" 
+                        className="stepper-btn"
+                        onClick={() => {
+                          const val = Math.min(60, parseInt(formGasto.totalParcelas || "1") + 1);
+                          setFormGasto({...formGasto, totalParcelas: val.toString()});
+                        }}
+                      >+</button>
+                    </div>
+                  </div>
+                </div>
+
+                {parseInt(formGasto.totalParcelas)>1 && formGasto.valor && (
+                  <div style={{ background: "rgba(108,92,231,0.08)", border: "1px solid rgba(108,92,231,0.2)", borderRadius: "var(--radius-md)", padding: "12px 16px", fontSize: 13, animation: "fadeInUp 0.3s ease both" }}>
+                    <div style={{ color: "var(--primary-light)", fontWeight: 600, marginBottom: 4 }}>💳 Resumo das parcelas</div>
+                    <div style={{ color: "var(--text-secondary)", display: "flex", gap: 16, flexWrap: "wrap" }}>
                       <span>{formGasto.totalParcelas}× de {fmt(formGasto.valor)}</span>
-                      <span>Total: <strong style={{ color:"#e2e8f0" }}>{fmt(parseFloat(formGasto.valor)*parseInt(formGasto.totalParcelas))}</strong></span>
+                      <span>Total: <strong style={{ color: "var(--text-primary)" }}>{fmt(parseFloat(formGasto.valor)*parseInt(formGasto.totalParcelas))}</strong></span>
                     </div>
                   </div>
                 )}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                  <button onClick={()=>addGasto(false)} style={{ ...baseBtn, background:parseInt(formGasto.totalParcelas)>1?CLR.parcela.bg:CLR.gasto.bg, color:parseInt(formGasto.totalParcelas)>1?CLR.parcela.text:CLR.gasto.text, border:`1px solid ${parseInt(formGasto.totalParcelas)>1?CLR.parcela.border:CLR.gasto.border}`, padding:"10px" }}>
-                    {parseInt(formGasto.totalParcelas)>1?`💳 Lançar ${formGasto.totalParcelas} parcelas`:"+ Adicionar gasto"}
+
+                <div className="form-actions">
+                  <button 
+                    type="button" 
+                    className="btn btn-primary" 
+                    onClick={()=>addGasto(false)}
+                  >
+                    <span className="btn-icon">+</span> {parseInt(formGasto.totalParcelas)>1 ? `Lançar ${formGasto.totalParcelas} parcelas` : "Adicionar gasto"}
                   </button>
-                  <button onClick={()=>addGasto(true)} style={{ ...baseBtn, background:CLR.prevista.bg, color:CLR.prevista.text, border:`1px solid ${CLR.prevista.border}`, padding:"10px" }}>🔮 Lançar como previsto</button>
+                  <button 
+                    type="button" 
+                    className="btn btn-outline-warning" 
+                    onClick={()=>addGasto(true)}
+                  >
+                    Lançar como previsto
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            {/* Barra de Resumo + Filtros + Busca */}
+            <section className="summary-section">
+              <div className="summary-bar">
+                <div className="summary-period">{mesLabel}</div>
+                <div className="summary-divider"></div>
+                <div className="summary-stat">
+                  <span className="stat-label">Gastos</span>
+                  <span className="stat-value">{gastosFiltrados.length}</span>
+                </div>
+                <div className="summary-divider"></div>
+                <div className="summary-stat">
+                  <span className="stat-label">Efetivado</span>
+                  <span className="stat-value positive">{fmt(totalGastos)}</span>
+                </div>
+                <div className="summary-divider"></div>
+                <div className="summary-stat">
+                  <span className="stat-label">Previsto</span>
+                  <span className="stat-value warning">{fmt(previstosG)}</span>
                 </div>
               </div>
-            </Card>
-            <div style={{ display:"grid", gap:10, marginBottom:10 }}>
-              <SearchBar value={search} onChange={setSearch} />
-              <div style={{ display:"grid", gap:8 }}>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", justifyContent:"space-between" }}>
-                  <div style={{ fontSize:12, color:CLR.neutral.muted }}>
-                    {mesLabel} — {gastosFiltrados.length} gasto(s) — Efetivado: <span style={{ color:CLR.gasto.text, fontWeight:600 }}>{fmt(totalGastos)}</span>
-                    {previstosG>0&&<> — Previsto: <span style={{ color:CLR.prevista.text, fontWeight:600 }}>{fmt(previstosG)}</span></>}
-                  </div>
-                </div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:12, alignItems:"center" }}>
-                  <span style={{ fontSize:11, color:CLR.neutral.muted, textTransform:"uppercase", letterSpacing:0.5 }}>Filtrar</span>
-                  <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:CLR.neutral.label }}>
-                    <input type="checkbox" checked={gastosStatusFilter.previsto} onChange={e=>setGastosStatusFilter(s=>({...s, previsto:e.target.checked}))} />
-                    Previsto não efetivado
-                  </label>
-                  <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:CLR.neutral.label }}>
-                    <input type="checkbox" checked={gastosStatusFilter.efetivado} onChange={e=>setGastosStatusFilter(s=>({...s, efetivado:e.target.checked}))} />
+
+              <div className="filter-row">
+                <div className="filter-chips">
+                  <button 
+                    className={`chip ${(!gastosStatusFilter.previsto && !gastosStatusFilter.efetivado && !gastosStatusFilter.consolidado) || (gastosStatusFilter.previsto && gastosStatusFilter.efetivado && gastosStatusFilter.consolidado) ? "chip-active" : ""}`}
+                    onClick={() => setGastosStatusFilter({ previsto: true, efetivado: true, consolidado: true })}
+                  >
+                    Todos
+                  </button>
+                  <button 
+                    className={`chip ${gastosStatusFilter.efetivado && !gastosStatusFilter.previsto ? "chip-active" : ""}`}
+                    onClick={() => setGastosStatusFilter({ previsto: false, efetivado: true, consolidado: true })}
+                  >
                     Efetivado
-                  </label>
-                  <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:CLR.neutral.label }}>
-                    <input type="checkbox" checked={gastosStatusFilter.consolidado} onChange={e=>setGastosStatusFilter(s=>({...s, consolidado:e.target.checked}))} />
-                    Consolidado direto
-                  </label>
+                  </button>
+                  <button 
+                    className={`chip ${gastosStatusFilter.previsto && !gastosStatusFilter.efetivado ? "chip-active" : ""}`}
+                    onClick={() => setGastosStatusFilter({ previsto: true, efetivado: false, consolidado: false })}
+                  >
+                    Previsto
+                  </button>
+                </div>
+                <div className="search-wrapper">
+                  <span className="search-icon">🔍</span>
+                  <input 
+                    type="text" 
+                    className="search-input" 
+                    placeholder="Pesquisar..." 
+                    value={search} 
+                    onChange={e=>setSearch(e.target.value)} 
+                  />
                 </div>
               </div>
-            </div>
-            {gastosFiltrados.length===0&&<div style={{ fontSize:13, color:CLR.neutral.muted, textAlign:"center", padding:"2rem 0" }}>Nenhum gasto encontrado.</div>}
-            {gastosFiltrados.map(g=><ItemRow key={g.id} item={g} tipo="gasto" onEdit={openEdit} onDelete={askDelete} onEfetivar={efetivar} />)}
+            </section>
+
+            {/* Lista de Gastos */}
+            <section className="expenses-section">
+              {gastosFiltrados.length === 0 ? (
+                <div style={{ fontSize: 13, color: "var(--text-tertiary)", textAlign: "center", padding: "2rem 0" }}>
+                  Nenhum gasto encontrado.
+                </div>
+              ) : (
+                <div className="expenses-list">
+                  {gastosFiltrados.map(g => (
+                    <ItemRow key={g.id} item={g} tipo="gasto" onEdit={openEdit} onDelete={askDelete} onEfetivar={efetivar} />
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
         )}
 
