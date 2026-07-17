@@ -76,9 +76,9 @@ function SelectField({ label, children, ...props }) {
     </div>
   );
 }
-function ProgressBar({ val, max }) {
+function ProgressBar({ val, max, color }) {
   const pct = max>0 ? Math.min(100,(val/max)*100) : 0;
-  const c = pct>=90 ? CLR.gasto.text : pct>=70 ? "#f59e0b" : CLR.entrada.text;
+  const c = color || (pct>=90 ? CLR.gasto.text : pct>=70 ? "#f59e0b" : CLR.entrada.text);
   return (
     <div style={{ height:6, background:CLR.neutral.border, borderRadius:99, overflow:"hidden" }}>
       <div style={{ height:6, width:`${pct}%`, background:c, borderRadius:99, transition:"width 0.4s" }}></div>
@@ -121,6 +121,39 @@ function StatusBadge({ previsto, efetivado }) {
   if (!previsto) return null;
   if (efetivado) return <Badge color="#2ecc8f">✓ Efetivado</Badge>;
   return <Badge color="#d4c22a">⏳ Previsto</Badge>;
+}
+
+function DashboardCard({ label, value, icon, legend, trend, color, gradient, border, watermark }) {
+  return (
+    <div style={{
+      background: gradient,
+      border: border,
+      borderRadius: 12,
+      padding: "16px 20px",
+      position: "relative",
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "space-between",
+      minHeight: 110,
+      boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+    }}>
+      <div style={{ fontSize: 12, color: CLR.neutral.label, fontWeight: 500, zIndex: 1, textTransform: "none" }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 6, zIndex: 1, marginTop: 10 }}>
+        <span style={{ fontSize: 24, fontWeight: 700, color: "#ffffff", letterSpacing: "-0.5px" }}>{value}</span>
+        {trend && <span style={{ color: color, fontSize: 16, fontWeight: "bold" }}>{trend}</span>}
+      </div>
+      <div style={{ fontSize: 11, color: CLR.neutral.muted, marginTop: 8, zIndex: 1 }}>{legend}</div>
+      <div style={{ position: "absolute", right: 14, bottom: 8, fontSize: 44, opacity: 0.08, zIndex: 0, userSelect: "none", pointerEvents: "none" }}>
+        {watermark}
+      </div>
+      {icon && (
+        <div style={{ position: "absolute", right: 16, top: 16, fontSize: 18, color: color }}>
+          {icon}
+        </div>
+      )}
+    </div>
+  );
 }
 function ItemRow({ item, tipo, onEdit, onDelete, onEfetivar }) {
   const [expandido, setExpandido] = useState(false);
@@ -1154,55 +1187,92 @@ export default function App() {
         </div>
       )}
 
-      {/* Header */}
-      <div style={{ padding:"1.25rem 1.25rem 1rem", display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:`1px solid ${CLR.neutral.border}` }}>
-        <div>
-          <div style={{ fontWeight:700, fontSize:20, background:"linear-gradient(90deg,#2ecc8f,#f0c040)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>⚔️ Finanças Guerreiros</div>
-          <div style={{ fontSize:12, color:CLR.neutral.muted }}>
-            Lucas & Lene — {isModeOnline ? <span style={{ color:"#2ecc8f", fontWeight:600 }}>Sincronizado Online 🔥</span> : "Modo Local 💾"}
-          </div>
+      {/* Header / Topbar */}
+      <div style={{ padding:"0.75rem 1.25rem", display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:`1px solid ${CLR.neutral.border}`, background: "#1a1a26" }}>
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #4f46e5)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff" }}>F</div>
+          <span style={{ fontWeight: 700, fontSize: 16, color: "#ffffff", letterSpacing: "0.2px" }}>Finanças Guerreiros</span>
         </div>
         
-        <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+        {/* Profile / Dropdown */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {saving && <span style={{ fontSize:11, color:CLR.neutral.muted }}>💾 Salvando...</span>}
-          <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-            <select value={tipoFiltro} onChange={e=>setTipoFiltro(e.target.value)} style={{ ...baseInput, width:"auto", padding:"6px 10px", fontSize:12 }}>
-              <option value="mensal">Mensal</option>
-              <option value="periodo">Período</option>
-            </select>
-            
-            {tipoFiltro === "mensal" ? (
-              <div style={{ display:"flex", gap:4 }}>
-                <select value={filtroMes} onChange={e=>setFiltroMes(Number(e.target.value))} style={{ ...baseInput, width:"auto", padding:"6px 10px", fontSize:12 }}>
-                  {MESES.map((m,i)=><option key={i} value={i}>{m}</option>)}
-                </select>
-                <select value={filtroAno} onChange={e=>setFiltroAno(Number(e.target.value))} style={{ ...baseInput, width:"auto", padding:"6px 10px", fontSize:12 }}>
-                  {[2024,2025,2026,2027].map(a=><option key={a} value={a}>{a}</option>)}
-                </select>
-              </div>
-            ) : (
-              <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                <input type="date" value={filtroDataInicio} onChange={e=>setFiltroDataInicio(e.target.value)} style={{ ...baseInput, width:"auto", padding:"5px 8px", fontSize:12 }} />
-                <span style={{ fontSize:11, color:CLR.neutral.muted }}>até</span>
-                <input type="date" value={filtroDataFim} onChange={e=>setFiltroDataFim(e.target.value)} style={{ ...baseInput, width:"auto", padding:"5px 8px", fontSize:12 }} />
-              </div>
-            )}
+          {!isModeOnline && <span style={{ fontSize:11, color:CLR.prevista.text, background: "rgba(212,194,42,0.08)", border: `1px solid ${CLR.prevista.border}`, borderRadius: 99, padding: "2px 8px" }}>Modo Local</span>}
+          <div 
+            onClick={handleLogout} 
+            title="Clique para desconectar" 
+            style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: 8, 
+              cursor: "pointer", 
+              background: "rgba(255,255,255,0.03)", 
+              padding: "4px 10px", 
+              borderRadius: 20, 
+              border: `1px solid ${CLR.neutral.border}` 
+            }}
+          >
+            <div style={{ width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg, #8b5cf6, #3b82f6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff" }}>👩‍❤️‍👨</div>
+            <span style={{ fontSize: 12, fontWeight: 500, color: "#e2e8f0" }}>Lucas & Lene</span>
+            <span style={{ fontSize: 8, color: CLR.neutral.muted }}>▼</span>
           </div>
-          
-          {/* Botão de Logout */}
-          <button onClick={handleLogout} title="Sair do aplicativo" style={{ ...baseBtn, background:"#3d1515", color:"#e05555", border:"1px solid #6b2525", padding:"6px 10px", display:"flex", alignItems:"center", gap:4, fontSize:11 }}>
-            🚪 Sair
-          </button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display:"flex", padding:"0 1.25rem", borderBottom:`1px solid ${CLR.neutral.border}`, overflowX:"auto" }}>
-        {tabs.map(t=>(
-          <button key={t.key} onClick={()=>setTab(t.key)} style={{ background:"none", border:"none", cursor:"pointer", padding:"12px 14px", fontSize:13, fontWeight:tab===t.key?600:400, color:tab===t.key?"#e2e8f0":CLR.neutral.muted, borderBottom:tab===t.key?"2px solid #f0c040":"2px solid transparent", marginBottom:-1, whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:5 }}>
-            {t.icon} {t.label}
-          </button>
-        ))}
+      {/* Navegação + Filtro na mesma linha */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", padding: "0.5rem 1.25rem", borderBottom: `1px solid ${CLR.neutral.border}`, gap: 10 }}>
+        {/* Abas Estilo Pílula */}
+        <div style={{ display:"flex", gap: 4, overflowX:"auto", scrollbarWidth:"none" }}>
+          {tabs.map(t=>(
+            <button 
+              key={t.key} 
+              onClick={()=>setTab(t.key)} 
+              style={{ 
+                background: tab===t.key ? "#25253a" : "transparent", 
+                border: tab===t.key ? `1px solid ${CLR.neutral.border}` : "1px solid transparent", 
+                borderRadius: 99, 
+                cursor:"pointer", 
+                padding:"6px 14px", 
+                fontSize:13, 
+                fontWeight: 500,
+                color: tab===t.key ? "#e2e8f0" : CLR.neutral.muted, 
+                whiteSpace:"nowrap", 
+                display:"flex", 
+                alignItems:"center", 
+                gap: 5,
+                transition: "all 0.2s"
+              }}
+            >
+              <span style={{ filter: tab===t.key ? "none" : "grayscale(1) opacity(0.7)" }}>{t.icon}</span> {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Filtro de Período Arredondado */}
+        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          <select value={tipoFiltro} onChange={e=>setTipoFiltro(e.target.value)} style={{ ...baseInput, width:"auto", padding:"5px 10px", fontSize:12, borderRadius: 20 }}>
+            <option value="mensal">Mensal</option>
+            <option value="periodo">Período</option>
+          </select>
+          
+          {tipoFiltro === "mensal" ? (
+            <div style={{ display:"flex", gap:4, background: CLR.neutral.card, border: `1px solid ${CLR.neutral.border}`, borderRadius: 20, padding: "2px 6px" }}>
+              <select value={filtroMes} onChange={e=>setFiltroMes(Number(e.target.value))} style={{ background: "transparent", border: "none", color: "#e2e8f0", fontSize: 12, padding: "3px 6px", outline: "none", cursor: "pointer" }}>
+                {MESES.map((m,i)=><option key={i} value={i} style={{ background: CLR.neutral.bg }}>{m}</option>)}
+              </select>
+              <select value={filtroAno} onChange={e=>setFiltroAno(Number(e.target.value))} style={{ background: "transparent", border: "none", color: "#e2e8f0", fontSize: 12, padding: "3px 6px", outline: "none", cursor: "pointer" }}>
+                {[2024,2025,2026,2027].map(a=><option key={a} value={a} style={{ background: CLR.neutral.bg }}>{a}</option>)}
+              </select>
+            </div>
+          ) : (
+            <div style={{ display:"flex", alignItems:"center", gap:4, background: CLR.neutral.card, border: `1px solid ${CLR.neutral.border}`, borderRadius: 20, padding: "2px 8px" }}>
+              <input type="date" value={filtroDataInicio} onChange={e=>setFiltroDataInicio(e.target.value)} style={{ background: "transparent", border: "none", color: "#e2e8f0", fontSize: 12, outline: "none", cursor: "pointer", width: 105 }} />
+              <span style={{ fontSize:10, color:CLR.neutral.muted }}>à</span>
+              <input type="date" value={filtroDataFim} onChange={e=>setFiltroDataFim(e.target.value)} style={{ background: "transparent", border: "none", color: "#e2e8f0", fontSize: 12, outline: "none", cursor: "pointer", width: 105 }} />
+            </div>
+          )}
+        </div>
       </div>
 
       <div style={{ padding:"1.25rem" }}>
@@ -1273,56 +1343,191 @@ export default function App() {
 
         {/* DASHBOARD */}
         {tab==="dashboard" && (
-          <div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:12, marginBottom:18 }}>
-              <StatCard label="Entradas efetivadas" value={fmt(totalEntradas)} icon="📈" color={CLR.entrada.text} sub={`${efetivadas.length} registro(s)`} />
-              <StatCard label="Gastos efetivados"   value={fmt(totalGastos)}   icon="📉" color={CLR.gasto.text}   sub={`${efetivadosG.length} registro(s)`} />
-              <StatCard label="Saldo do mês"         value={fmt(saldo)}         icon="💰" color={saldo>=0?CLR.entrada.text:CLR.gasto.text} sub={mesLabel} />
-              {previstasE>0 && <StatCard label="Prev. entradas" value={fmt(previstasE)} icon="🔮" color={CLR.prevista.text} sub="Ainda não efetivado" />}
-              {previstosG>0 && <StatCard label="Prev. gastos"   value={fmt(previstosG)} icon="🔮" color={CLR.prevista.text} sub="Ainda não efetivado" />}
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:18 }}>
-              <Card>
-                <div style={{ fontSize:13, fontWeight:600, marginBottom:12, color:CLR.entrada.text }}>📈 Entradas por pessoa</div>
-                {[{label:"Lucas",val:entradasLucas},{label:"Lene",val:entradasLene}].map(p=>(
-                  <div key={p.label} style={{ marginBottom:10 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:4 }}>
-                      <span style={{ color:CLR.neutral.label }}>{p.label}</span>
-                      <span style={{ fontWeight:600, color:CLR.entrada.text }}>{fmt(p.val)}</span>
+          <div className="dashboard-grid" style={{ 
+            display: "grid", 
+            gridTemplateColumns: "2fr 1fr", 
+            gap: "16px",
+            alignItems: "start",
+            width: "100%",
+            boxSizing: "border-box"
+          }}>
+            {/* Coluna da Esquerda (Cartões de Resumo + Categorias) */}
+            <div style={{ display: "grid", gap: "16px" }}>
+              {/* Grid 2x2 de Cartões de Resumo */}
+              <div style={{ 
+                display: "grid", 
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
+                gap: "12px" 
+              }}>
+                <DashboardCard 
+                  label="Entradas efetivadas:" 
+                  value={fmt(totalEntradas)} 
+                  icon="↗" 
+                  legend="Movimentações de entradas efetivas" 
+                  trend="↗" 
+                  color={CLR.entrada.text} 
+                  gradient="linear-gradient(135deg, #0d3d2e 0%, #112620 100%)" 
+                  border={`1px solid ${CLR.entrada.border}`}
+                  watermark="🪙"
+                />
+                <DashboardCard 
+                  label="Gastos efetivados:" 
+                  value={fmt(totalGastos)} 
+                  icon="—" 
+                  legend="Movimentações de gastos efetivados" 
+                  trend="—" 
+                  color={CLR.gasto.text} 
+                  gradient="linear-gradient(135deg, #3d1515 0%, #261717 100%)" 
+                  border={`1px solid ${CLR.gasto.border}`}
+                  watermark="🐖"
+                />
+                <DashboardCard 
+                  label="Saldo do mês:" 
+                  value={fmt(saldo)} 
+                  icon={saldo >= 0 ? "✓" : "⚠️"} 
+                  legend="Saldo líquido calculado do período" 
+                  trend="" 
+                  color={saldo >= 0 ? CLR.entrada.text : CLR.gasto.text} 
+                  gradient={saldo >= 0 ? "linear-gradient(135deg, #0d3d2e 0%, #112620 100%)" : "linear-gradient(135deg, #3d1515 0%, #261717 100%)"} 
+                  border={saldo >= 0 ? `1px solid ${CLR.entrada.border}` : `1px solid ${CLR.gasto.border}`}
+                  watermark="⚖️"
+                />
+                <DashboardCard 
+                  label="Prev. gastos:" 
+                  value={fmt(previstosG)} 
+                  icon="🕒" 
+                  legend="Despesas previstas pendentes" 
+                  trend="" 
+                  color={CLR.prevista.text} 
+                  gradient="linear-gradient(135deg, #1d1d2b 0%, #161622 100%)" 
+                  border={`1px solid ${CLR.neutral.border}`}
+                  watermark="🕒"
+                />
+              </div>
+
+              {/* Gastos vs Orçamento */}
+              <Card style={{ background: CLR.neutral.card, border: `1px solid ${CLR.neutral.border}` }}>
+                <div style={{ fontSize:13, fontWeight:600, marginBottom:16, color:"#e2e8f0" }}>Gastos vs. Orçamento por categoria</div>
+                
+                {categorias.map(cat => {
+                  const orc = (data.orcamentos || {})[cat] || 0;
+                  const gasto = gastosPorCategoria[cat] || 0;
+                  if (gasto === 0 && orc === 0) return null; // Oculta se não houver orçamento nem gasto
+                  
+                  const limiteEstourado = orc > 0 && gasto > orc;
+                  const progressoCor = limiteEstourado ? CLR.gasto.text : CLR.entrada.text;
+
+                  return (
+                    <div key={cat} style={{ marginBottom: 14 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 13, marginBottom: 4 }}>
+                        <span style={{ color: CLR.neutral.label }}>{cat}</span>
+                        <span style={{ fontWeight: 600, color: limiteEstourado ? CLR.gasto.text : "#e2e8f0" }}>
+                          {fmt(gasto)}
+                          <span style={{ color: CLR.neutral.muted, fontWeight: 400, fontSize: 11, marginLeft: 4 }}>
+                            / {orc > 0 ? fmt(orc) : "Sem limite"}
+                          </span>
+                        </span>
+                      </div>
+                      {orc > 0 && (
+                        <ProgressBar val={gasto} max={orc} color={progressoCor} />
+                      )}
                     </div>
-                    <ProgressBar val={p.val} max={totalEntradas} />
+                  );
+                })}
+
+                {categorias.every(c => (gastosPorCategoria[c] || 0) === 0 && ((data.orcamentos || {})[c] || 0) === 0) && (
+                  <div style={{ fontSize: 13, color: CLR.neutral.muted, textAlign: "center", padding: "1rem 0" }}>
+                    Nenhum gasto ou orçamento definido para este mês.
                   </div>
-                ))}
-              </Card>
-              <Card>
-                <div style={{ fontSize:13, fontWeight:600, marginBottom:12, color:CLR.gasto.text }}>📉 Gastos por responsável</div>
-                {Object.entries(gastosPorPessoa).map(([k,v])=>(
-                  <div key={k} style={{ marginBottom:10 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:4 }}>
-                      <span style={{ color:CLR.neutral.label }}>{k}</span>
-                      <span style={{ fontWeight:600, color:CLR.gasto.text }}>{fmt(v)}</span>
-                    </div>
-                    <ProgressBar val={v} max={totalGastos} />
-                  </div>
-                ))}
+                )}
               </Card>
             </div>
-            <Card>
-              <div style={{ fontSize:13, fontWeight:600, marginBottom:14, color:"#f0c040" }}>🎯 Gastos vs. Orçamento por categoria</div>
-              {categorias.filter(c=>gastosPorCategoria[c]>0).map(cat=>{
-                const orc=(data.orcamentos || {})[cat]||0, gasto=gastosPorCategoria[cat];
+
+            {/* Coluna da Direita (Painel Lateral) */}
+            <div style={{ display: "grid", gap: "16px" }}>
+              {/* Card Donut Chart */}
+              {(() => {
+                const totalE = entradasLucas + entradasLene;
+                const pctLucas = totalE > 0 ? (entradasLucas / totalE) * 100 : 0;
                 return (
-                  <div key={cat} style={{ marginBottom:12 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:4 }}>
-                      <span style={{ color:CLR.neutral.label }}>{cat}</span>
-                      <span style={{ fontWeight:600, color:CLR.gasto.text }}>{fmt(gasto)}{orc>0&&<span style={{ color:CLR.neutral.muted, fontWeight:400 }}> / {fmt(orc)}</span>}</span>
+                  <Card style={{ background: CLR.neutral.card, border: `1px solid ${CLR.neutral.border}` }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 16, color: "#e2e8f0" }}>Entradas por pessoa</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                      {/* Donut Chart em CSS */}
+                      <div style={{
+                        width: 76,
+                        height: 76,
+                        borderRadius: "50%",
+                        background: totalE > 0 
+                          ? `conic-gradient(#6366f1 0% ${pctLucas}%, #10b981 ${pctLucas}% 100%)` 
+                          : "#333355",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0
+                      }}>
+                        <div style={{ width: 50, height: 50, borderRadius: "50%", background: CLR.neutral.card }} />
+                      </div>
+
+                      {/* Legenda */}
+                      <div style={{ display: "grid", gap: 8, flex: 1 }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6366f1" }} />
+                            <span style={{ color: CLR.neutral.label }}>Lucas</span>
+                          </div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0", marginLeft: 14 }}>{fmt(entradasLucas)}</div>
+                        </div>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />
+                            <span style={{ color: CLR.neutral.label }}>Lene</span>
+                          </div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0", marginLeft: 14 }}>{fmt(entradasLene)}</div>
+                        </div>
+                      </div>
                     </div>
-                    {orc>0&&<ProgressBar val={gasto} max={orc} />}
-                  </div>
+                  </Card>
                 );
-              })}
-              {categorias.every(c=>gastosPorCategoria[c]===0)&&<div style={{ fontSize:13, color:CLR.neutral.muted }}>Nenhum gasto efetivado neste mês.</div>}
-            </Card>
+              })()}
+
+              {/* Card Gastos por Responsável */}
+              <Card style={{ background: CLR.neutral.card, border: `1px solid ${CLR.neutral.border}` }}>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 16, color: "#e2e8f0" }}>Gastos por responsável</div>
+                {(() => {
+                  const rCasal = gastosPorPessoa["Casal"] || 0;
+                  const rLucas = gastosPorPessoa["Lucas"] || 0;
+                  const rLene = gastosPorPessoa["Lene"] || 0;
+                  const totalG = rCasal + rLucas + rLene;
+
+                  return (
+                    <div style={{ display: "grid", gap: 12 }}>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+                          <span style={{ color: CLR.neutral.label }}>Casal</span>
+                          <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{fmt(rCasal)}</span>
+                        </div>
+                        <ProgressBar val={rCasal} max={totalG || 1} color="#6366f1" />
+                      </div>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+                          <span style={{ color: CLR.neutral.label }}>Lucas</span>
+                          <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{fmt(rLucas)}</span>
+                        </div>
+                        <ProgressBar val={rLucas} max={totalG || 1} color="#10b981" />
+                      </div>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+                          <span style={{ color: CLR.neutral.label }}>Lene</span>
+                          <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{fmt(rLene)}</span>
+                        </div>
+                        <ProgressBar val={rLene} max={totalG || 1} color="#f43f5e" />
+                      </div>
+                    </div>
+                  );
+                })()}
+              </Card>
+            </div>
           </div>
         )}
 

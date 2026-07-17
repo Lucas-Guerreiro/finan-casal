@@ -32,3 +32,10 @@ html, body {
 ::-webkit-scrollbar-thumb:hover {
   background: #444466;
 }
+
+/* Layout responsivo para o Grid do Painel */
+@media (max-width: 800px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
