@@ -208,7 +208,7 @@ function ItemRow({ item, tipo, onEdit, onDelete, onEfetivar }) {
 
         <div className="expense-actions" onClick={e => e.stopPropagation()}>
           {isPrevisto && !isEfetivado && (
-            <button className="expense-action-btn edit" onClick={() => onEfetivar(tipo, item)} title="Efetivar lançamento">✓</button>
+            <button className="expense-action-btn settle" onClick={() => onEfetivar(tipo, item)} title="Efetivar lançamento">✓</button>
           )}
           <button className="expense-action-btn edit" onClick={() => onEdit(tipo, item)} title="Editar">✏️</button>
           <button className="expense-action-btn delete" onClick={() => onDelete(tipo, item.id, item.grupoId)} title="Excluir">🗑️</button>

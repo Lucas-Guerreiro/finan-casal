@@ -313,8 +313,13 @@ html, body {
 .expense-date { font-size: var(--fs-xs); color: var(--text-tertiary); }
 .expense-actions { display: flex; gap: var(--space-1); opacity: 0; transition: opacity var(--transition-fast); }
 .expense-item:hover .expense-actions { opacity: 1; }
-.expense-action-btn { width: 30px; height: 30px; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); transition: background var(--transition-fast); }
+.expense-action-btn { width: 30px; height: 30px; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast); }
 .expense-action-btn:hover { background: rgba(255,255,255,0.08); }
+.expense-action-btn.settle { color: var(--positive); background: var(--positive-bg); font-weight: var(--fw-bold); }
+.expense-action-btn.settle:hover { background: rgba(46, 204, 113, 0.2); }
+.expense-action-btn.edit { color: var(--primary-light); }
+.expense-action-btn.delete { color: var(--negative); }
+.expense-action-btn.delete:hover { background: rgba(235, 94, 85, 0.15); }
 @media (max-width: 768px) {
   .expense-actions { opacity: 1; }
 }
