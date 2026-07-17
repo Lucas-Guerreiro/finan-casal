@@ -571,7 +571,21 @@ export default function App() {
   const totalGastos   = efetivadosG.reduce((s,g)=>s+Number(g.valor),0);
   const previstasE = entradasMes.filter(e=>e.previsto&&!e.efetivado).reduce((s,e)=>s+Number(e.valor),0);
   const previstosG = gastosMes.filter(g=>g.previsto&&!g.efetivado).reduce((s,g)=>s+Number(g.valor),0);
-  const saldo = totalEntradas - totalGastos;
+
+  // Determinar a data de início do período selecionado
+  const dataInicioPeriodo = tipoFiltro === "mensal"
+    ? `${filtroAno}-${String(filtroMes + 1).padStart(2, "0")}-01`
+    : filtroDataInicio;
+
+  // Lançamentos efetivados anteriores ao período selecionado
+  const entradasAnteriores = (data.entradas || []).filter(e => (!e.previsto || e.efetivado) && e.data < dataInicioPeriodo);
+  const gastosAnteriores   = (data.gastos || []).filter(g => (!g.previsto || g.efetivado) && g.data < dataInicioPeriodo);
+
+  const totalEntradasAnteriores = entradasAnteriores.reduce((s, e) => s + Number(e.valor), 0);
+  const totalGastosAnteriores   = gastosAnteriores.reduce((s, g) => s + Number(g.valor), 0);
+  const saldoAnterior = totalEntradasAnteriores - totalGastosAnteriores;
+
+  const saldo = saldoAnterior + totalEntradas - totalGastos;
 
   const entradasLucas = efetivadas.filter(e=>e.quem==="Lucas").reduce((s,e)=>s+Number(e.valor),0);
   const entradasLene  = efetivadas.filter(e=>e.quem==="Lene").reduce((s,e)=>s+Number(e.valor),0);
@@ -1349,12 +1363,14 @@ export default function App() {
               
               <div className="kpi-card gradient-amber">
                 <div className="kpi-header">
-                  <span className="kpi-label">Saldo do mês</span>
+                  <span className="kpi-label">Saldo Acumulado</span>
                   <span className="kpi-icon-bg">⚠️</span>
                 </div>
                 <span className={`kpi-value ${saldo < 0 ? "negative" : ""}`}>{fmt(saldo)}</span>
                 <div className="kpi-footer">
-                  <span className="kpi-meta">{mesLabel}</span>
+                  <span className="kpi-meta" title={`Pontual do mês: ${fmt(totalEntradas - totalGastos)} | Acumulado anterior: ${fmt(saldoAnterior)}`}>
+                    {saldoAnterior !== 0 ? `Pontual: ${fmt(totalEntradas - totalGastos)}` : mesLabel}
+                  </span>
                   <span className={`kpi-badge ${saldo < 0 ? "danger" : "pending"}`} style={{ background: saldo >= 0 ? "var(--positive-bg)" : "", color: saldo >= 0 ? "var(--positive)" : "" }}>
                     {saldo >= 0 ? "Positivo" : "Negativo"}
                   </span>
