@@ -1195,77 +1195,79 @@ export default function App() {
 
       {/* Header */}
       <header className="app-header">
-        <div className="header-left">
-          <div className="app-logo">
-            <span className="logo-icon">💰</span>
-            <h1 className="logo-text">Finanças Guerreiros</h1>
-          </div>
-        </div>
-        <div className="header-right">
-          {/* Seletor de Período Pill-Style */}
-          <div className="period-selector">
-            <select 
-              value={tipoFiltro} 
-              onChange={e=>setTipoFiltro(e.target.value)} 
-              className="period-btn active"
-              style={{ background: "none", border: "none", color: "var(--primary-light)", cursor: "pointer", outline: "none", fontFamily: "var(--font-family)", fontSize: "var(--fs-sm)", fontWeight: "var(--fw-medium)" }}
-            >
-              <option value="mensal" style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}>Mensal</option>
-              <option value="periodo" style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}>Período</option>
-            </select>
-            <span className="period-divider">|</span>
-            {tipoFiltro === "mensal" ? (
-              <>
-                <select 
-                  value={filtroMes} 
-                  onChange={e=>setFiltroMes(Number(e.target.value))} 
-                  className="period-date"
-                  style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", outline: "none", fontFamily: "var(--font-family)", fontSize: "var(--fs-sm)", fontWeight: "var(--fw-medium)" }}
-                >
-                  {MESES.map((m,i)=><option key={i} value={i} style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}>{m.slice(0,3)}</option>)}
-                </select>
-                <select 
-                  value={filtroAno} 
-                  onChange={e=>setFiltroAno(Number(e.target.value))} 
-                  className="period-year"
-                  style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", outline: "none", fontFamily: "var(--font-family)", fontSize: "var(--fs-sm)", fontWeight: "var(--fw-medium)" }}
-                >
-                  {[2024,2025,2026,2027].map(a=><option key={a} value={a} style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}>{a}</option>)}
-                </select>
-              </>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <input 
-                  type="date" 
-                  value={filtroDataInicio} 
-                  onChange={e=>setFiltroDataInicio(e.target.value)} 
-                  style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "var(--fs-xs)", cursor: "pointer", outline: "none", width: 90, fontFamily: "var(--font-family)" }} 
-                />
-                <span style={{ fontSize: 10, color: "var(--text-tertiary)" }}>-</span>
-                <input 
-                  type="date" 
-                  value={filtroDataFim} 
-                  onChange={e=>setFiltroDataFim(e.target.value)} 
-                  style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "var(--fs-xs)", cursor: "pointer", outline: "none", width: 90, fontFamily: "var(--font-family)" }} 
-                />
-              </div>
-            )}
-          </div>
-          
-          <div className="sync-status">
-            <span className={`sync-dot ${isModeOnline ? "online" : ""}`}></span>
-            <span className="sync-text">{isModeOnline ? "Sincronizado" : "Local"}</span>
-          </div>
-          
-          <div className="user-profile">
-            <div className="avatar-group">
-              <span className="avatar" style={{ "--avatar-color": "#6C5CE7" }}>L</span>
-              <span className="avatar" style={{ "--avatar-color": "#2ECC71" }}>Le</span>
+        <div className="header-content">
+          <div className="header-left">
+            <div className="app-logo">
+              <span className="logo-icon">💰</span>
+              <h1 className="logo-text">Finanças Guerreiros</h1>
             </div>
-            <span className="user-name">Lucas & Lene</span>
           </div>
-          
-          <button className="btn-logout" onClick={handleLogout}>Sair</button>
+          <div className="header-right">
+            {/* Seletor de Período Pill-Style */}
+            <div className="period-selector">
+              <select 
+                value={tipoFiltro} 
+                onChange={e=>setTipoFiltro(e.target.value)} 
+                className="period-btn active"
+                style={{ background: "none", border: "none", color: "var(--primary-light)", cursor: "pointer", outline: "none", fontFamily: "var(--font-family)", fontSize: "var(--fs-sm)", fontWeight: "var(--fw-medium)" }}
+              >
+                <option value="mensal" style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}>Mensal</option>
+                <option value="periodo" style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}>Período</option>
+              </select>
+              <span className="period-divider">|</span>
+              {tipoFiltro === "mensal" ? (
+                <>
+                  <select 
+                    value={filtroMes} 
+                    onChange={e=>setFiltroMes(Number(e.target.value))} 
+                    className="period-date"
+                    style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", outline: "none", fontFamily: "var(--font-family)", fontSize: "var(--fs-sm)", fontWeight: "var(--fw-medium)" }}
+                  >
+                    {MESES.map((m,i)=><option key={i} value={i} style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}>{m.slice(0,3)}</option>)}
+                  </select>
+                  <select 
+                    value={filtroAno} 
+                    onChange={e=>setFiltroAno(Number(e.target.value))} 
+                    className="period-year"
+                    style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", outline: "none", fontFamily: "var(--font-family)", fontSize: "var(--fs-sm)", fontWeight: "var(--fw-medium)" }}
+                  >
+                    {[2024,2025,2026,2027].map(a=><option key={a} value={a} style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}>{a}</option>)}
+                  </select>
+                </>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <input 
+                    type="date" 
+                    value={filtroDataInicio} 
+                    onChange={e=>setFiltroDataInicio(e.target.value)} 
+                    style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "var(--fs-xs)", cursor: "pointer", outline: "none", width: 90, fontFamily: "var(--font-family)" }} 
+                  />
+                  <span style={{ fontSize: 10, color: "var(--text-tertiary)" }}>-</span>
+                  <input 
+                    type="date" 
+                    value={filtroDataFim} 
+                    onChange={e=>setFiltroDataFim(e.target.value)} 
+                    style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "var(--fs-xs)", cursor: "pointer", outline: "none", width: 90, fontFamily: "var(--font-family)" }} 
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div className="sync-status">
+              <span className={`sync-dot ${isModeOnline ? "online" : ""}`}></span>
+              <span className="sync-text">{isModeOnline ? "Sincronizado" : "Local"}</span>
+            </div>
+            
+            <div className="user-profile">
+              <div className="avatar-group">
+                <span className="avatar" style={{ "--avatar-color": "#6C5CE7" }}>L</span>
+                <span className="avatar" style={{ "--avatar-color": "#2ECC71" }}>Le</span>
+              </div>
+              <span className="user-name">Lucas & Lene</span>
+            </div>
+            
+            <button className="btn-logout" onClick={handleLogout}>Sair</button>
+          </div>
         </div>
       </header>
 
