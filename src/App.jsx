@@ -1281,7 +1281,7 @@ export default function App() {
         ))}
       </nav>
 
-      <div style={{ padding:"1.25rem" }}>
+      <div className="main-content-container" style={{ padding:"1.25rem" }}>
 
         {/* Alerta de Despesas Pendentes de Meses Anteriores */}
         {/* Alerta de Despesas Pendentes de Meses Anteriores */}
