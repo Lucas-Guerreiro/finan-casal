@@ -125,6 +125,11 @@ html, body {
   background: var(--bg-primary); border-bottom: 1px solid var(--glass-border);
   overflow-x: auto;
 }
+@media (min-width: 769px) {
+  .tab-navigation {
+    justify-content: center;
+  }
+}
 
 .tab-item {
   background: none; border: none; color: var(--text-tertiary);
