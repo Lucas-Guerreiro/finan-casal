@@ -278,6 +278,7 @@ export default function App() {
   const [tab, setTab] = useState("dashboard");
   const [menuAberto, setMenuAberto] = useState(false);
   const [showAddGastoModal, setShowAddGastoModal] = useState(false);
+  const [gastosRespFilter, setGastosRespFilter] = useState("todos");
   const [data, setData] = useState(defaultData);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -562,9 +563,15 @@ export default function App() {
   const gastosMes   = filterTransactions(data.gastos || []);
   const entradasFiltradas = applySearch(entradasMes);
   const gastosFiltrados   = applySearch(gastosMes.filter(g => {
-    if (g.previsto && !g.efetivado) return gastosStatusFilter.previsto;
-    if (g.previsto && g.efetivado) return gastosStatusFilter.efetivado;
-    return gastosStatusFilter.consolidado;
+    if (g.previsto && !g.efetivado) {
+      if (!gastosStatusFilter.previsto) return false;
+    } else if (g.previsto && g.efetivado) {
+      if (!gastosStatusFilter.efetivado) return false;
+    } else {
+      if (!gastosStatusFilter.consolidado) return false;
+    }
+    if (gastosRespFilter !== "todos" && g.responsavel !== gastosRespFilter) return false;
+    return true;
   }));
 
   const efetivadas  = entradasMes.filter(e=>!e.previsto||e.efetivado);
@@ -573,6 +580,7 @@ export default function App() {
   const totalGastos   = efetivadosG.reduce((s,g)=>s+Number(g.valor),0);
   const previstasE = entradasMes.filter(e=>e.previsto&&!e.efetivado).reduce((s,e)=>s+Number(e.valor),0);
   const previstosG = gastosMes.filter(g=>g.previsto&&!g.efetivado).reduce((s,g)=>s+Number(g.valor),0);
+  const totalGastosSelecionados = gastosFiltrados.reduce((s,g)=>s+Number(g.valor),0);
 
   // Determinar a data de início do período selecionado
   const dataInicioPeriodo = tipoFiltro === "mensal"
@@ -1853,28 +1861,62 @@ export default function App() {
                   <span className="stat-label">Saldo Acumulado</span>
                   <span className={`stat-value ${saldo < 0 ? "negative" : "positive"}`}>{fmt(saldo)}</span>
                 </div>
+                <div className="summary-divider"></div>
+                <div className="summary-stat">
+                  <span className="stat-label">Selecionados</span>
+                  <span className="stat-value" style={{ color: "var(--primary-light)" }}>{fmt(totalGastosSelecionados)}</span>
+                </div>
               </div>
 
-              <div className="filter-row">
-                <div className="filter-chips">
-                  <button 
-                    className={`chip ${(!gastosStatusFilter.previsto && !gastosStatusFilter.efetivado && !gastosStatusFilter.consolidado) || (gastosStatusFilter.previsto && gastosStatusFilter.efetivado && gastosStatusFilter.consolidado) ? "chip-active" : ""}`}
-                    onClick={() => setGastosStatusFilter({ previsto: true, efetivado: true, consolidado: true })}
-                  >
-                    Todos
-                  </button>
-                  <button 
-                    className={`chip ${gastosStatusFilter.efetivado && !gastosStatusFilter.previsto ? "chip-active" : ""}`}
-                    onClick={() => setGastosStatusFilter({ previsto: false, efetivado: true, consolidado: true })}
-                  >
-                    Efetivado
-                  </button>
-                  <button 
-                    className={`chip ${gastosStatusFilter.previsto && !gastosStatusFilter.efetivado ? "chip-active" : ""}`}
-                    onClick={() => setGastosStatusFilter({ previsto: true, efetivado: false, consolidado: false })}
-                  >
-                    Previsto
-                  </button>
+              <div className="filter-row" style={{ gap: 12 }}>
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  <div className="filter-chips">
+                    <button 
+                      className={`chip ${(!gastosStatusFilter.previsto && !gastosStatusFilter.efetivado && !gastosStatusFilter.consolidado) || (gastosStatusFilter.previsto && gastosStatusFilter.efetivado && gastosStatusFilter.consolidado) ? "chip-active" : ""}`}
+                      onClick={() => setGastosStatusFilter({ previsto: true, efetivado: true, consolidado: true })}
+                    >
+                      Todos
+                    </button>
+                    <button 
+                      className={`chip ${gastosStatusFilter.efetivado && !gastosStatusFilter.previsto ? "chip-active" : ""}`}
+                      onClick={() => setGastosStatusFilter({ previsto: false, efetivado: true, consolidado: true })}
+                    >
+                      Efetivado
+                    </button>
+                    <button 
+                      className={`chip ${gastosStatusFilter.previsto && !gastosStatusFilter.efetivado ? "chip-active" : ""}`}
+                      onClick={() => setGastosStatusFilter({ previsto: true, efetivado: false, consolidado: false })}
+                    >
+                      Previsto
+                    </button>
+                  </div>
+
+                  <div className="filter-chips">
+                    <button 
+                      className={`chip ${gastosRespFilter === "todos" ? "chip-active" : ""}`}
+                      onClick={() => setGastosRespFilter("todos")}
+                    >
+                      Todos (Quem)
+                    </button>
+                    <button 
+                      className={`chip ${gastosRespFilter === "Lucas" ? "chip-active" : ""}`}
+                      onClick={() => setGastosRespFilter("Lucas")}
+                    >
+                      Lucas
+                    </button>
+                    <button 
+                      className={`chip ${gastosRespFilter === "Lene" ? "chip-active" : ""}`}
+                      onClick={() => setGastosRespFilter("Lene")}
+                    >
+                      Lene
+                    </button>
+                    <button 
+                      className={`chip ${gastosRespFilter === "Casal" ? "chip-active" : ""}`}
+                      onClick={() => setGastosRespFilter("Casal")}
+                    >
+                      Casal
+                    </button>
+                  </div>
                 </div>
                 
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
