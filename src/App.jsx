@@ -277,6 +277,7 @@ const FIRESTORE_CASAL_ID = "casal_lucas_lene";
 export default function App() {
   const [tab, setTab] = useState("dashboard");
   const [menuAberto, setMenuAberto] = useState(false);
+  const [showAddGastoModal, setShowAddGastoModal] = useState(false);
   const [data, setData] = useState(defaultData);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -625,6 +626,7 @@ export default function App() {
     setItensGastoForm([]);
     setNovoItemDesc("");
     setNovoItemValor("");
+    setShowAddGastoModal(false);
   }
   function addEntrada(previsto) {
     if (!formEntrada.descricao||!formEntrada.valor) return;
@@ -1573,249 +1575,259 @@ export default function App() {
         {/* GASTOS */}
         {tab==="gastos" && (
           <div>
-            {/* Formulário "Adicionar Gasto" */}
-            <section className="form-section">
-              <div className="section-header">
-                <h2 className="section-title">Adicionar gasto</h2>
-              </div>
-              <form className="expense-form" onSubmit={e => e.preventDefault()}>
-                <div className="form-row full-width">
-                  <div className="form-group">
-                    <label className="form-label">DESCRIÇÃO</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      placeholder="Ex: Fatura Cartão, Netflix..." 
-                      value={formGasto.descricao} 
-                      onChange={e=>setFormGasto({...formGasto,descricao:e.target.value})} 
-                    />
-                    <button 
-                      type="button" 
-                      className="form-expand-link"
-                      onClick={() => {
-                        const novoEstado = !detalharItensForm;
-                        setDetalharItensForm(novoEstado);
-                        if (!novoEstado) {
-                          setItensGastoForm([]);
-                        }
-                      }} 
-                    >
-                      {detalharItensForm ? "✕ Cancelar detalhamento" : "+ Detalhar itens desta compra"}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Área dinâmica de detalhamento de sub-itens */}
-                {detalharItensForm && (
-                  <div style={{ 
-                    background: "var(--bg-primary)", 
-                    border: "1px solid var(--glass-border)", 
-                    borderRadius: "var(--radius-md)", 
-                    padding: 16,
-                    display: "grid",
-                    gap: 12 
-                  }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--primary-light)", display: "flex", justifyContent: "space-between" }}>
-                      <span>📋 Itens da Compra</span>
-                      <span>Total: {fmt(itensGastoForm.reduce((s,i)=>s+Number(i.valor),0))}</span>
-                    </div>
-                    
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 90px auto", gap: 8, alignItems: "end" }}>
-                      <div className="form-group" style={{ gap: 4 }}>
-                        <label className="form-label" style={{ fontSize: 10 }}>Nome do Item</label>
-                        <input 
-                          type="text"
-                          className="form-input"
-                          style={{ height: 36 }}
-                          placeholder="Ex: Prato, Cortina..." 
-                          value={novoItemDesc} 
-                          onChange={e=>setNovoItemDesc(e.target.value)} 
-                        />
-                      </div>
-                      <div className="form-group" style={{ gap: 4 }}>
-                        <label className="form-label" style={{ fontSize: 10 }}>Valor (R$)</label>
-                        <input 
-                          type="number"
-                          className="form-input"
-                          style={{ height: 36 }}
-                          placeholder="0,00" 
-                          value={novoItemValor} 
-                          onChange={e=>setNovoItemValor(e.target.value)} 
-                        />
-                      </div>
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          if (!novoItemDesc || !novoItemValor) return;
-                          const novoItem = {
-                            id: Date.now(),
-                            descricao: novoItemDesc,
-                            valor: parseFloat(novoItemValor)
-                          };
-                          const novaLista = [...itensGastoForm, novoItem];
-                          setItensGastoForm(novaLista);
-                          setNovoItemDesc("");
-                          setNovoItemValor("");
-                          const total = novaLista.reduce((s,i) => s + i.valor, 0);
-                          setFormGasto(f => ({ ...f, valor: total.toString() }));
-                        }}
-                        style={{ 
-                          height: 36, 
-                          width: 36, 
-                          background: "var(--primary)", 
-                          color: "white", 
-                          border: "none", 
-                          borderRadius: "var(--radius-md)", 
-                          cursor: "pointer", 
-                          display: "flex", 
-                          alignItems: "center", 
-                          justifyContent: "center",
-                          fontSize: 14 
-                        }}
-                      >
-                        ➕
-                      </button>
-                    </div>
-
-                    {itensGastoForm.length > 0 && (
-                      <div style={{ display: "grid", gap: 6, marginTop: 4 }}>
-                        {itensGastoForm.map((it) => (
-                          <div key={it.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--bg-card)", border: "1px solid var(--glass-border)", borderRadius: "var(--radius-sm)", padding: "8px 12px", fontSize: 12 }}>
-                            <span style={{ color: "var(--text-primary)" }}>• {it.descricao}</span>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontWeight: 600, color: "var(--positive)" }}>{fmt(it.valor)}</span>
-                              <button 
-                                type="button" 
-                                onClick={() => {
-                                  const novaLista = itensGastoForm.filter(i => i.id !== it.id);
-                                  setItensGastoForm(novaLista);
-                                  const total = novaLista.reduce((s,i) => s + i.valor, 0);
-                                  setFormGasto(f => ({ ...f, valor: total.toString() }));
-                                }} 
-                                style={{ background: "none", border: "none", color: "var(--negative)", cursor: "pointer", padding: "2px 4px", fontSize: 12 }}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="form-row grid-2">
-                  <div className="form-group">
-                    <label className="form-label">VALOR POR PARCELA (R$)</label>
-                    <div className="input-currency">
-                      <span className="currency-prefix">R$</span>
-                      <input 
-                        type="number" 
-                        className="form-input currency-input" 
-                        placeholder="0,00" 
-                        value={formGasto.valor} 
-                        onChange={e=>setFormGasto({...formGasto,valor:e.target.value})} 
-                        disabled={detalharItensForm} 
-                      />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">DATA DA 1ª PARCELA</label>
-                    <div className="input-date-wrapper">
-                      <input 
-                        type="date" 
-                        className="form-input" 
-                        value={formGasto.data} 
-                        onChange={e=>setFormGasto({...formGasto,data:e.target.value})} 
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="form-row grid-3">
-                  <div className="form-group">
-                    <label className="form-label">CATEGORIA</label>
-                    <div className="input-select-wrapper">
-                      <select 
-                        className="form-select"
-                        value={formGasto.categoria} 
-                        onChange={e=>setFormGasto({...formGasto,categoria:e.target.value})}
-                      >
-                        {categorias.map(c=><option key={c}>{c}</option>)}
-                      </select>
-                      <span className="select-chevron">▼</span>
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">RESPONSÁVEL</label>
-                    <div className="input-select-wrapper">
-                      <select 
-                        className="form-select"
-                        value={formGasto.responsavel} 
-                        onChange={e=>setFormGasto({...formGasto,responsavel:e.target.value})}
-                      >
-                        {RESPONSAVEIS.map(r=><option key={r}>{r}</option>)}
-                      </select>
-                      <span className="select-chevron">▼</span>
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Nº DE PARCELAS</label>
-                    <div className="input-stepper">
-                      <button 
-                        type="button" 
-                        className="stepper-btn"
-                        onClick={() => {
-                          const val = Math.max(1, parseInt(formGasto.totalParcelas || "1") - 1);
-                          setFormGasto({...formGasto, totalParcelas: val.toString()});
-                        }}
-                      >−</button>
+            {/* Pop-up do Formulário "Adicionar Gasto" */}
+            {showAddGastoModal && (
+              <Modal 
+                title="📉 Adicionar Gasto" 
+                accent="gasto" 
+                onClose={() => { 
+                  setShowAddGastoModal(false); 
+                  setFormGasto({ ...formGasto, descricao:"", valor:"", totalParcelas:"1" });
+                  setDetalharItensForm(false);
+                  setItensGastoForm([]);
+                  setNovoItemDesc("");
+                  setNovoItemValor("");
+                }}
+              >
+                <form className="expense-form" onSubmit={e => e.preventDefault()}>
+                  <div className="form-row full-width">
+                    <div className="form-group">
+                      <label className="form-label">DESCRIÇÃO</label>
                       <input 
                         type="text" 
-                        className="stepper-input" 
-                        value={formGasto.totalParcelas} 
-                        onChange={e=>setFormGasto({...formGasto,totalParcelas:e.target.value})} 
+                        className="form-input" 
+                        placeholder="Ex: Fatura Cartão, Netflix..." 
+                        value={formGasto.descricao} 
+                        onChange={e=>setFormGasto({...formGasto,descricao:e.target.value})} 
                       />
                       <button 
                         type="button" 
-                        className="stepper-btn"
+                        className="form-expand-link"
                         onClick={() => {
-                          const val = Math.min(60, parseInt(formGasto.totalParcelas || "1") + 1);
-                          setFormGasto({...formGasto, totalParcelas: val.toString()});
-                        }}
-                      >+</button>
+                          const novoEstado = !detalharItensForm;
+                          setDetalharItensForm(novoEstado);
+                          if (!novoEstado) {
+                            setItensGastoForm([]);
+                          }
+                        }} 
+                      >
+                        {detalharItensForm ? "✕ Cancelar detalhamento" : "+ Detalhar itens desta compra"}
+                      </button>
                     </div>
                   </div>
-                </div>
 
-                {parseInt(formGasto.totalParcelas)>1 && formGasto.valor && (
-                  <div style={{ background: "rgba(108,92,231,0.08)", border: "1px solid rgba(108,92,231,0.2)", borderRadius: "var(--radius-md)", padding: "12px 16px", fontSize: 13, animation: "fadeInUp 0.3s ease both" }}>
-                    <div style={{ color: "var(--primary-light)", fontWeight: 600, marginBottom: 4 }}>💳 Resumo das parcelas</div>
-                    <div style={{ color: "var(--text-secondary)", display: "flex", gap: 16, flexWrap: "wrap" }}>
-                      <span>{formGasto.totalParcelas}× de {fmt(formGasto.valor)}</span>
-                      <span>Total: <strong style={{ color: "var(--text-primary)" }}>{fmt(parseFloat(formGasto.valor)*parseInt(formGasto.totalParcelas))}</strong></span>
+                  {/* Área dinâmica de detalhamento de sub-itens */}
+                  {detalharItensForm && (
+                    <div style={{ 
+                      background: "var(--bg-primary)", 
+                      border: "1px solid var(--glass-border)", 
+                      borderRadius: "var(--radius-md)", 
+                      padding: 16,
+                      display: "grid",
+                      gap: 12 
+                    }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--primary-light)", display: "flex", justifyContent: "space-between" }}>
+                        <span>📋 Itens da Compra</span>
+                        <span>Total: {fmt(itensGastoForm.reduce((s,i)=>s+Number(i.valor),0))}</span>
+                      </div>
+                      
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 90px auto", gap: 8, alignItems: "end" }}>
+                        <div className="form-group" style={{ gap: 4 }}>
+                          <label className="form-label" style={{ fontSize: 10 }}>Nome do Item</label>
+                          <input 
+                            type="text"
+                            className="form-input"
+                            style={{ height: 36 }}
+                            placeholder="Ex: Prato, Cortina..." 
+                            value={novoItemDesc} 
+                            onChange={e=>setNovoItemDesc(e.target.value)} 
+                          />
+                        </div>
+                        <div className="form-group" style={{ gap: 4 }}>
+                          <label className="form-label" style={{ fontSize: 10 }}>Valor (R$)</label>
+                          <input 
+                            type="number"
+                            className="form-input"
+                            style={{ height: 36 }}
+                            placeholder="0,00" 
+                            value={novoItemValor} 
+                            onChange={e=>setNovoItemValor(e.target.value)} 
+                          />
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            if (!novoItemDesc || !novoItemValor) return;
+                            const novoItem = {
+                              id: Date.now(),
+                              descricao: novoItemDesc,
+                              valor: parseFloat(novoItemValor)
+                            };
+                            const novaLista = [...itensGastoForm, novoItem];
+                            setItensGastoForm(novaLista);
+                            setNovoItemDesc("");
+                            setNovoItemValor("");
+                            const total = novaLista.reduce((s,i) => s + i.valor, 0);
+                            setFormGasto(f => ({ ...f, valor: total.toString() }));
+                          }}
+                          style={{ 
+                            height: 36, 
+                            width: 36, 
+                            background: "var(--primary)", 
+                            color: "white", 
+                            border: "none", 
+                            borderRadius: "var(--radius-md)", 
+                            cursor: "pointer", 
+                            display: "flex", 
+                            alignItems: "center", 
+                            justifyContent: "center",
+                            fontSize: 14 
+                          }}
+                        >
+                          ➕
+                        </button>
+                      </div>
+
+                      {itensGastoForm.length > 0 && (
+                        <div style={{ display: "grid", gap: 6, marginTop: 4 }}>
+                          {itensGastoForm.map((it) => (
+                            <div key={it.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--bg-card)", border: "1px solid var(--glass-border)", borderRadius: "var(--radius-sm)", padding: "8px 12px", fontSize: 12 }}>
+                              <span style={{ color: "var(--text-primary)" }}>• {it.descricao}</span>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ fontWeight: 600, color: "var(--positive)" }}>{fmt(it.valor)}</span>
+                                <button 
+                                  type="button" 
+                                  onClick={() => {
+                                    const novaLista = itensGastoForm.filter(i => i.id !== it.id);
+                                    setItensGastoForm(novaLista);
+                                    const total = novaLista.reduce((s,i) => s + i.valor, 0);
+                                    setFormGasto(f => ({ ...f, valor: total.toString() }));
+                                  }} 
+                                  style={{ background: "none", border: "none", color: "var(--negative)", cursor: "pointer", padding: "2px 4px", fontSize: 12 }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="form-row grid-2">
+                    <div className="form-group">
+                      <label className="form-label">VALOR POR PARCELA (R$)</label>
+                      <div className="input-currency">
+                        <span className="currency-prefix">R$</span>
+                        <input 
+                          type="number" 
+                          className="form-input currency-input" 
+                          placeholder="0,00" 
+                          value={formGasto.valor} 
+                          onChange={e=>setFormGasto({...formGasto,valor:e.target.value})} 
+                          disabled={detalharItensForm} 
+                        />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">DATA DA 1ª PARCELA</label>
+                      <div className="input-date-wrapper">
+                        <input 
+                          type="date" 
+                          className="form-input" 
+                          value={formGasto.data} 
+                          onChange={e=>setFormGasto({...formGasto,data:e.target.value})} 
+                        />
+                      </div>
                     </div>
                   </div>
-                )}
 
-                <div className="form-actions">
-                  <button 
-                    type="button" 
-                    className="btn btn-primary" 
-                    onClick={()=>addGasto(false)}
-                  >
-                    <span className="btn-icon">+</span> {parseInt(formGasto.totalParcelas)>1 ? `Lançar ${formGasto.totalParcelas} parcelas` : "Adicionar gasto"}
-                  </button>
-                  <button 
-                    type="button" 
-                    className="btn btn-outline-warning" 
-                    onClick={()=>addGasto(true)}
-                  >
-                    Lançar como previsto
-                  </button>
-                </div>
-              </form>
-            </section>
+                  <div className="form-row grid-3">
+                    <div className="form-group">
+                      <label className="form-label">CATEGORIA</label>
+                      <div className="input-select-wrapper">
+                        <select 
+                          className="form-select"
+                          value={formGasto.categoria} 
+                          onChange={e=>setFormGasto({...formGasto,categoria:e.target.value})}
+                        >
+                          {categorias.map(c=><option key={c}>{c}</option>)}
+                        </select>
+                        <span className="select-chevron">▼</span>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">RESPONSÁVEL</label>
+                      <div className="input-select-wrapper">
+                        <select 
+                          className="form-select"
+                          value={formGasto.responsavel} 
+                          onChange={e=>setFormGasto({...formGasto,responsavel:e.target.value})}
+                        >
+                          {RESPONSAVEIS.map(r=><option key={r}>{r}</option>)}
+                        </select>
+                        <span className="select-chevron">▼</span>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Nº DE PARCELAS</label>
+                      <div className="input-stepper">
+                        <button 
+                          type="button" 
+                          className="stepper-btn"
+                          onClick={() => {
+                            const val = Math.max(1, parseInt(formGasto.totalParcelas || "1") - 1);
+                            setFormGasto({...formGasto, totalParcelas: val.toString()});
+                          }}
+                        >−</button>
+                        <input 
+                          type="text" 
+                          className="stepper-input" 
+                          value={formGasto.totalParcelas} 
+                          onChange={e=>setFormGasto({...formGasto,totalParcelas:e.target.value})} 
+                        />
+                        <button 
+                          type="button" 
+                          className="stepper-btn"
+                          onClick={() => {
+                            const val = Math.min(60, parseInt(formGasto.totalParcelas || "1") + 1);
+                            setFormGasto({...formGasto, totalParcelas: val.toString()});
+                          }}
+                        >+</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {parseInt(formGasto.totalParcelas)>1 && formGasto.valor && (
+                    <div style={{ background: "rgba(108,92,231,0.08)", border: "1px solid rgba(108,92,231,0.2)", borderRadius: "var(--radius-md)", padding: "12px 16px", fontSize: 13 }}>
+                      <div style={{ color: "var(--primary-light)", fontWeight: 600, marginBottom: 4 }}>💳 Resumo das parcelas</div>
+                      <div style={{ color: "var(--text-secondary)", display: "flex", gap: 16, flexWrap: "wrap" }}>
+                        <span>{formGasto.totalParcelas}× de {fmt(formGasto.valor)}</span>
+                        <span>Total: <strong style={{ color: "var(--text-primary)" }}>{fmt(parseFloat(formGasto.valor)*parseInt(formGasto.totalParcelas))}</strong></span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="form-actions">
+                    <button 
+                      type="button" 
+                      className="btn btn-primary" 
+                      onClick={()=>addGasto(false)}
+                    >
+                      <span className="btn-icon">+</span> {parseInt(formGasto.totalParcelas)>1 ? `Lançar ${formGasto.totalParcelas} parcelas` : "Adicionar gasto"}
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn btn-outline-warning" 
+                      onClick={()=>addGasto(true)}
+                    >
+                      Lançar como previsto
+                    </button>
+                  </div>
+                </form>
+              </Modal>
+            )}
 
             {/* Barra de Resumo + Filtros + Busca */}
             <section className="summary-section">
@@ -1835,6 +1847,11 @@ export default function App() {
                 <div className="summary-stat">
                   <span className="stat-label">Previsto</span>
                   <span className="stat-value warning">{fmt(previstosG)}</span>
+                </div>
+                <div className="summary-divider"></div>
+                <div className="summary-stat">
+                  <span className="stat-label">Saldo Acumulado</span>
+                  <span className={`stat-value ${saldo < 0 ? "negative" : "positive"}`}>{fmt(saldo)}</span>
                 </div>
               </div>
 
@@ -1859,15 +1876,25 @@ export default function App() {
                     Previsto
                   </button>
                 </div>
-                <div className="search-wrapper">
-                  <span className="search-icon">🔍</span>
-                  <input 
-                    type="text" 
-                    className="search-input" 
-                    placeholder="Pesquisar..." 
-                    value={search} 
-                    onChange={e=>setSearch(e.target.value)} 
-                  />
+                
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                  <div className="search-wrapper">
+                    <span className="search-icon">🔍</span>
+                    <input 
+                      type="text" 
+                      className="search-input" 
+                      placeholder="Pesquisar..." 
+                      value={search} 
+                      onChange={e=>setSearch(e.target.value)} 
+                    />
+                  </div>
+                  <button 
+                    className="btn btn-primary" 
+                    style={{ height: 36, padding: "0 var(--space-4)", fontSize: "var(--fs-sm)" }}
+                    onClick={() => setShowAddGastoModal(true)}
+                  >
+                    + Adicionar Gasto
+                  </button>
                 </div>
               </div>
             </section>
