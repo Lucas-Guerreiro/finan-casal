@@ -448,5 +448,52 @@ html, body {
 .expense-action-btn.delete { color: var(--negative); }
 .expense-action-btn.delete:hover { background: rgba(235, 94, 85, 0.15); }
 @media (max-width: 768px) {
-  .expense-actions { opacity: 1; }
+  /* Listagem de transações responsiva */
+  .expense-item {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: var(--space-3);
+    gap: var(--space-2) var(--space-3);
+  }
+  .expense-avatar {
+    width: 32px;
+    height: 32px;
+  }
+  .expense-info {
+    flex: 1 1 calc(100% - 130px);
+    min-width: 0;
+  }
+  .expense-description {
+    white-space: normal;
+    word-break: break-word;
+    font-size: var(--fs-sm);
+  }
+  .expense-amount-section {
+    flex: 0 0 auto;
+    text-align: right;
+  }
+  .expense-value {
+    font-size: var(--fs-sm);
+  }
+  .expense-actions {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    opacity: 1;
+    margin-top: var(--space-2);
+    padding-top: var(--space-2);
+    border-top: 1px dashed var(--glass-border);
+  }
+
+  /* Formulários responsivos */
+  .form-row.grid-2, .form-row.grid-3 {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  .form-actions {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .form-actions .btn {
+    width: 100%;
+  }
 }
