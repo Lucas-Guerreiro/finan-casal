@@ -276,6 +276,7 @@ const FIRESTORE_CASAL_ID = "casal_lucas_lene";
 
 export default function App() {
   const [tab, setTab] = useState("dashboard");
+  const [menuAberto, setMenuAberto] = useState(false);
   const [data, setData] = useState(defaultData);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1196,13 +1197,26 @@ export default function App() {
       {/* Header */}
       <header className="app-header">
         <div className="header-content">
-          <div className="header-left">
-            <div className="app-logo">
-              <span className="logo-icon">💰</span>
-              <h1 className="logo-text">Finanças Guerreiros</h1>
+          {/* Linha Superior (Desktop e Mobile) */}
+          <div className="header-content-top">
+            <div className="header-left">
+              <div className="app-logo">
+                <span className="logo-icon">💰</span>
+                <h1 className="logo-text">Finanças Guerreiros</h1>
+              </div>
             </div>
+            {/* Botão Sanduíche (Aparece apenas no celular via CSS) */}
+            <button 
+              className="menu-toggle-btn"
+              onClick={() => setMenuAberto(!menuAberto)}
+              aria-label="Menu"
+            >
+              ☰
+            </button>
           </div>
-          <div className="header-right">
+
+          {/* Linha Inferior (Empilha no Mobile, fica Inline no Desktop) */}
+          <div className="header-content-bottom">
             {/* Seletor de Período Pill-Style */}
             <div className="period-selector">
               <select 
@@ -1270,6 +1284,24 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {/* Menu Sanduíche Mobile Dropdown */}
+      {menuAberto && (
+        <div className="mobile-menu-dropdown">
+          {tabs.map(t=>(
+            <button 
+              key={t.key} 
+              onClick={() => {
+                setTab(t.key);
+                setMenuAberto(false);
+              }} 
+              className={`mobile-menu-item ${tab===t.key ? "active" : ""}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <nav className="tab-navigation">
         {tabs.map(t=>(
